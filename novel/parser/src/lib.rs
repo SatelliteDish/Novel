@@ -1,7 +1,11 @@
-use tokenizer;
+use tokenizer::{self, Tokenizer};
 
 pub fn parse(text: &str) -> String {
-    let mut result: String = String::from(text);
+    let mut tokenizer = Tokenizer::new(text);
+    let mut result: String = String::from( {match tokenizer.next_token() {
+        Some(text) => text,
+        None => " ".to_string()
+    }});
     result
 }
 
