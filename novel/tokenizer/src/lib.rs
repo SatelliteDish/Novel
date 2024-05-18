@@ -34,7 +34,6 @@ impl Tokenizer {
                 }));
                 break;
             }
-            print!("Trying {} on {}\n", key, self.text);
         }
         result
     }
