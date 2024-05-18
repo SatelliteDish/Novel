@@ -1,4 +1,3 @@
-use std::error::Error;
 use json::{self, object};
 pub struct Tokenizer {
     text: String,
@@ -26,22 +25,18 @@ impl Tokenizer {
         }
     }
     fn get_token(&mut self, char: &char) -> Result<String,&str> {
-        let mut token = String::new();
+        let mut result: Result<String, &str> = Err("Error: Invalid Syntax");
         if char.is_numeric() {
-            token = self.get_number_literal();
-        } else {
-            return Err("Error: Invalid Syntax");
+            result = Ok(String::from(self.get_number_literal()))
         }
-        Ok(String::from(token))
+        result
     }
     fn get_number_literal(&mut self) -> String {
         let mut number = String::new();
         for char in self.text.chars() {
             self.pointer += 1;
-            print!("{}\n",char);
             if char.is_numeric() || char == '.' {
                 number.push(char);
-                print!("number = {}", number);
             } else { break; }
         }
         json::stringify(object!{
