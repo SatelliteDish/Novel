@@ -7,7 +7,7 @@ pub fn parse(text: &str) -> String {
     while more_tokens {
         match tokenizer.next_token() {
             Some(token) => {
-                result = result + &token;
+                result = result + "\n" + &token;
             },
             None => {
                 more_tokens = false;
