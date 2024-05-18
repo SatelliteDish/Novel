@@ -1,5 +1,8 @@
-use std::error::Error;
 use json::{self, object};
+use regex::{Regex};
+use std::collections::HashMap;
+#[derive(PartialEq, Eq, Hash, Clone)]
+
 pub struct Tokenizer {
     text: String,
     pointer: usize
@@ -7,12 +10,27 @@ pub struct Tokenizer {
 impl Tokenizer {
     pub fn new(text: &str) -> Tokenizer {
         Tokenizer {
-            text: String::from(text),
+            text: String::from(text) + " ",
             pointer: 0
         }
     }
     pub fn next_token(&mut self) -> Option<String> {
-        match self.text.chars().nth(0) {
+        let mut result: Option<String> = None;
+        let regex = [
+            ("NumericLiteral", Regex::new(r"^\d+(\.[\d]+)?").unwrap())
+        ];
+        for (key, regex) in regex {
+            if regex.is_match(&self.text) {
+                let val = regex.captures(&self.text).unwrap()[0].to_string();
+                self.text = String::from(&self.text[{val.len() + 1}..]);
+                result = Some(json::stringify(object!{
+                    type: key.to_string(),
+                    val: val,
+                }))
+            }
+        }
+        result
+        /*match self.text.chars().nth(0) {
             Some(char) => {
                 match self.get_token(&char) {
                     Ok(val) => Some(val),
@@ -23,25 +41,21 @@ impl Tokenizer {
                 }
             },
             None => None
-        }
+        } */ 
     }
     fn get_token(&mut self, char: &char) -> Result<String,&str> {
-        let mut token = String::new();
+        let mut result: Result<String, &str> = Err("Error: Invalid Syntax");
         if char.is_numeric() {
-            token = self.get_number_literal();
-        } else {
-            return Err("Error: Invalid Syntax");
+            result = Ok(String::from(self.get_number_literal()))
         }
-        Ok(String::from(token))
+        result
     }
     fn get_number_literal(&mut self) -> String {
         let mut number = String::new();
         for char in self.text.chars() {
             self.pointer += 1;
-            print!("{}\n",char);
             if char.is_numeric() || char == '.' {
                 number.push(char);
-                print!("number = {}", number);
             } else { break; }
         }
         json::stringify(object!{
