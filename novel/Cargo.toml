@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 json = "0.12.4"
 parser = {path="./parser"}
+regex = "1.10.4"
