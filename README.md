@@ -1,1 +1,1 @@
-# Cyan-lang
+# Novel-Lang
