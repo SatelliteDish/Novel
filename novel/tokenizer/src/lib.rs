@@ -58,14 +58,36 @@ impl Tokenizer {
         tokenizer
     }
     pub fn scan(&mut self) {
-        self.token = match self.get_next_token() {
-            Some(tkn) => {
-                self.text = self.text[tkn.len()..].to_string();
-                Some(tkn)
-            },
-            None => None
-        };
-        self.next_token = self.get_next_token();
+        loop {
+            self.token = match self.get_next_token() {
+                Some(tkn) => {
+                    self.text = self.text[tkn.len()..].to_string();
+                    Some(tkn)
+                },
+                None => None
+            };
+            match &self.token {
+                Some(tkn) => {
+                    if tkn.token_type != TokenType::Whitespace {
+                        break
+                    }
+                },
+                None => break
+            }
+        }
+        loop {
+            self.next_token = self.get_next_token();
+            match &self.next_token {
+                Some(tkn) => {
+                    if tkn.token_type != TokenType::Whitespace {
+                        break
+                    } else {
+                        self.text = self.text[tkn.len()..].to_string();
+                    }
+                },
+                None => break
+            }
+        }
     }
     fn get_next_token(&self) -> Option<Token>{
         let mut result = None;
