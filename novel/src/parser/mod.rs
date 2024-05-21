@@ -1,7 +1,6 @@
 use std::fmt;
-use super::tokenizer;
 mod tokenizer;
-use tokenizer::{self, Tokenizer};
+use tokenizer::Tokenizer;
 
 mod tree_node;
 use tree_node::TreeNode;

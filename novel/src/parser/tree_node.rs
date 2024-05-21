@@ -186,3 +186,39 @@ impl TreeNode {
         }
     }
 }
+
+mod tests {
+    use super::{TreeNode};
+    #[test]
+    fn new_add() {
+        for i in 0..100 {
+            let add = TreeNode::new_addition(TreeNode::NumericLiteral(i as f64), TreeNode::NumericLiteral({100-i} as f64));
+            if let TreeNode::Addition{ left, right } = add {
+                let left_val = match left.as_ref() {
+                    TreeNode::NumericLiteral(num) => *num,
+                    _ => i as f64*2.0
+                };
+                let right_val = match right.as_ref() {
+                    TreeNode::NumericLiteral(num) => *num,
+                    _ => i as f64
+                };
+                assert_eq!(left_val, i as f64);
+                assert_eq!(right_val, 100.0-i as f64);
+                return;
+            }
+            assert_eq!(true,false);
+        }
+    }
+    #[test]
+    fn addition() {
+        for i in -100..100 {
+            let add = TreeNode::new_addition(TreeNode::NumericLiteral(i as f64), TreeNode::NumericLiteral({100-i} as f64));
+            if let TreeNode::Addition{ .. } = add {
+                assert_eq!(match &add.eval() {
+                    Ok(val) => val,
+                    Err(e) => panic!("{}",e)
+                },"100");
+            }
+        }
+    }
+}
