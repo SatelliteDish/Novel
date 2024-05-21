@@ -1,5 +1,6 @@
 use std::fs::read_to_string;
-use parser;
+
+mod parser;
 
 fn main() {
     let text = match read_to_string("./src/code/First.nvl")  {

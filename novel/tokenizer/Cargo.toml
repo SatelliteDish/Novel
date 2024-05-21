@@ -1,8 +1,0 @@
-[package]
-name = "tokenizer"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-json = "0.12.4"
-regex = "1.10.4"

@@ -1,45 +1,10 @@
 use regex::Regex;
-#[derive(PartialEq,Eq,Clone,Hash,Copy)]
-pub enum TokenType {
-    NumericLiteral,
-    StringLiteral,
-    Whitespace,
-    Keyword,
-    Identifier,
-    Symbol
-}
 
-impl TokenType {
-    pub fn to_string(&self) -> String {
-        match self {
-            TokenType::NumericLiteral => "NumericLiteral".to_string(),
-            TokenType::StringLiteral => "StringLiteral".to_string(),
-            TokenType::Whitespace => "Whitespace".to_string(),
-            TokenType::Keyword => "Keyword".to_string(),
-            TokenType::Identifier => "Identifier".to_string(),
-            TokenType::Symbol => "Symbol".to_string()
-        }
-    }
-}
-#[derive(PartialEq,Eq,Hash,Clone)]
-pub struct Token {
-    pub token_type: TokenType,
-    pub val: String,
-    len: usize,
-}
-impl Token {
-    pub fn to_string(&self) -> String {
-        format!("
-            '{}': {{
-                val: {}
-            }}
-        ",self.token_type.to_string(),self.val)
-    }
-    pub fn len(&self) -> usize {
-        self.len
-    }
-}
+mod token;
+pub use token::{Token,TokenType};
+
 #[derive(PartialEq, Eq, Hash, Clone)]
+
 pub struct Tokenizer {
     text: String,
     pointer: usize,
@@ -58,10 +23,15 @@ impl Tokenizer {
         tokenizer
     }
     pub fn scan(&mut self) {
+        //loop to get get next non-whitespace token for current token
         loop {
             self.token = match self.get_next_token() {
                 Some(tkn) => {
-                    self.text = self.text[tkn.len()..].to_string();
+                    let tkn_len = match tkn.token_type {
+                        TokenType::StringLiteral => tkn.val.len() + 2,
+                        _ => tkn.val.len()
+                    };
+                    self.text = self.text[tkn_len..].to_string();
                     Some(tkn)
                 },
                 None => None
@@ -109,14 +79,12 @@ impl Tokenizer {
                 if let TokenType::StringLiteral = key {
                     val = val[1..{val.len()-1}].to_string();
                 }
-                result = Some(Token{
-                    token_type: *key,
-                    len: val.len(),
-                    val: match key {
+                let length = val.len().clone();
+                result = Some(Token::new(*key,match key {
                         TokenType::StringLiteral => val[1..val.len()-1].to_string(),
                         _ => val
-                    }
-                });
+                    },length
+                ));
                 break;
             }
         }
@@ -125,17 +93,3 @@ impl Tokenizer {
 }
 
 
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
