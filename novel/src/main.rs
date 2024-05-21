@@ -6,5 +6,5 @@ fn main() {
         Ok(val) => val,
         Err(_e) => format!("Error: {}",_e),
     };
-    println!("{}",parser::parse(&text));
+    println!("{}\n",parser::parse(&text));
 }

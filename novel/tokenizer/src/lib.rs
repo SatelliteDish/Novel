@@ -1,22 +1,31 @@
 use regex::Regex;
-
+#[derive(PartialEq,Eq,Clone,Hash,Copy)]
 pub enum TokenType {
     NumericLiteral,
     StringLiteral,
-    Whitespace
+    Whitespace,
+    Keyword,
+    Identifier,
+    Symbol
 }
+
 impl TokenType {
     pub fn to_string(&self) -> String {
         match self {
             TokenType::NumericLiteral => "NumericLiteral".to_string(),
             TokenType::StringLiteral => "StringLiteral".to_string(),
-            TokenType::Whitespace => "Whitespace".to_string()
+            TokenType::Whitespace => "Whitespace".to_string(),
+            TokenType::Keyword => "Keyword".to_string(),
+            TokenType::Identifier => "Identifier".to_string(),
+            TokenType::Symbol => "Symbol".to_string()
         }
     }
 }
+#[derive(PartialEq,Eq,Hash,Clone)]
 pub struct Token {
     pub token_type: TokenType,
-    pub val: String
+    pub val: String,
+    len: usize,
 }
 impl Token {
     pub fn to_string(&self) -> String {
@@ -26,39 +35,65 @@ impl Token {
             }}
         ",self.token_type.to_string(),self.val)
     }
+    pub fn len(&self) -> usize {
+        self.len
+    }
 }
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Tokenizer {
     text: String,
     pointer: usize,
-    pub next_token: Option<String>
+    pub token: Option<Token>,
+    pub next_token: Option<Token>
 }
 impl Tokenizer {
     pub fn new(text: &str) -> Tokenizer {
-        Tokenizer {
+        let mut tokenizer = Tokenizer {
             text: String::from(text),
             pointer: 0,
-            next_token: None
-        }
+            next_token: None,
+            token: None
+        };
+        tokenizer.scan();
+        tokenizer
     }
-    pub fn get_next_token(&mut self) -> Option<Token> {
-        let mut result: Option<Token> = None;
+    pub fn scan(&mut self) {
+        self.token = match self.get_next_token() {
+            Some(tkn) => {
+                self.text = self.text[tkn.len()..].to_string();
+                Some(tkn)
+            },
+            None => None
+        };
+        self.next_token = self.get_next_token();
+    }
+    fn get_next_token(&self) -> Option<Token>{
+        let mut result = None;
         let regex = [
             (TokenType::NumericLiteral, Regex::new(r"^\d+(\.[\d]+)?").unwrap()),
+            //any number of digits, and maybe a period and one or more digits.
             (TokenType::Whitespace, Regex::new("^ +").unwrap()),
-            (TokenType::StringLiteral, Regex::new(r#"^"[^"\n]*""#).unwrap()),
-            (TokenType::StringLiteral, Regex::new(r#"^'[^'\n]*'"#).unwrap())
+            //matches any number of spaces
+            (TokenType::StringLiteral, Regex::new(r#"^"[^"]*""#).unwrap()),
+            //anything between two sets of double quotes, except double quotes
+            (TokenType::StringLiteral, Regex::new(r#"^'[^']*'"#).unwrap()),
+            //anything inside single quotes, except single quotes
+            (TokenType::Symbol, Regex::new(r"^[+/*\-=^%]").unwrap())
+            //only + / * - = ^ %
         ];
-        for (key, regex) in regex {
-            if regex.is_match(&self.text) {
-                let mut val = regex.captures(&self.text).unwrap()[0].to_string();
-                self.text = String::from(&self.text[{val.len()}..]);
+        for (key, rgx) in &regex {
+            if rgx.is_match(&self.text) {
+                let mut val = rgx.captures(&self.text).unwrap()[0].to_string();
                 if let TokenType::StringLiteral = key {
                     val = val[1..{val.len()-1}].to_string();
                 }
                 result = Some(Token{
-                    token_type: key,
-                    val: val,
+                    token_type: *key,
+                    len: val.len(),
+                    val: match key {
+                        TokenType::StringLiteral => val[1..val.len()-1].to_string(),
+                        _ => val
+                    }
                 });
                 break;
             }
@@ -66,6 +101,7 @@ impl Tokenizer {
         result
     }
 }
+
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
