@@ -188,7 +188,9 @@ impl TreeNode {
 }
 
 mod tests {
-    use super::{TreeNode};
+    use std::borrow::Borrow;
+
+    use super::TreeNode;
     #[test]
     fn new_add() {
         for i in 0..100 {
@@ -212,13 +214,86 @@ mod tests {
     #[test]
     fn addition() {
         for i in -100..100 {
-            let add = TreeNode::new_addition(TreeNode::NumericLiteral(i as f64), TreeNode::NumericLiteral({100-i} as f64));
+            let i_f = i as f64;
+            let add = TreeNode::new_addition(
+                TreeNode::NumericLiteral(i_f),
+                TreeNode::NumericLiteral(100.0-i_f));
             if let TreeNode::Addition{ .. } = add {
                 assert_eq!(match &add.eval() {
                     Ok(val) => val,
                     Err(e) => panic!("{}",e)
                 },"100");
+                break;
+            }
+            assert_eq!(true,false);
+        }
+    }
+
+    #[test]
+    fn new_subtraction() {
+        for i in -100..100 {
+            let i_f = i as f64;
+            let sub = TreeNode::new_subtraction(
+                TreeNode::NumericLiteral(i_f),
+                TreeNode::NumericLiteral(100.0-i_f)
+            );
+            if let TreeNode::Subtraction { left, right } = sub {
+                let left_val = match left.as_ref() {
+                    TreeNode::NumericLiteral(num) => num,
+                    _ => {
+                        assert_eq!(true,false,
+                            "\nLeft branch of subtraction not a Numeric Literal, is {} instead.\n",
+                            left.as_ref().to_string());
+                        return
+                    }
+                };
+                let right_val = match right.as_ref() {
+                    TreeNode::NumericLiteral(num) => num,
+                    _ => {
+                        assert_eq!(true,false,
+                            "\nRight branch of subtraction not a Numeric Literal, is {} instead.\n",
+                            right.as_ref().to_string());
+                        return;
+                    }
+                };
+                assert_eq!(*left_val,i_f,
+                    "\nLeft side of subtraction should be {} but is {}!\n",i_f,*left_val);
+                assert_eq!(*right_val,100.0-i_f,
+                    "\nRight side of subtraction should be {} but is {}!\n",i_f,*right_val);
+            }
+
+        }
+    }
+
+    #[test]
+    fn subtraction() {
+        for i in -100..100 {
+            let i_f = i as f64;
+            let sub = TreeNode::new_subtraction(
+                TreeNode::NumericLiteral(i_f),
+                TreeNode::NumericLiteral(100.0-i_f)
+            );
+            if let TreeNode::Subtraction { .. } = sub {
+                match &sub.eval() {
+                    Ok(val) => {
+                        match val.parse::<f64>() {
+                            Ok(num) => {
+                                assert_eq!(num,i_f-(100.0-i_f),"Subtraction not following math correctly!");
+                            },
+                            Err(_e) => {
+                                assert_eq!(true,false,"Subtraction value cannot be parsed to f64!");
+                                return;
+                            }
+                        }
+                    },
+                    Err(_e) => {
+                        assert_eq!(true,false,"Failed to evaluate subtraction");
+                        return;
+                    }
+                };
+                
             }
         }
     }
+
 }
