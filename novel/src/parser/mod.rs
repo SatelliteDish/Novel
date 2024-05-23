@@ -1,23 +1,10 @@
-use std::fmt;
 mod tokenizer;
 use tokenizer::Tokenizer;
 
 mod tree_node;
-use tree_node::TreeNode;
+use tree_node::{TreeNode,LiteralValue};
 
-enum ParserError {
-    DivideByZero
-}
-impl fmt::Display for ParserError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let message = match &self {
-            ParserError::DivideByZero => {
-                format!("\nError: Cannot divide by zero!\n")
-            }
-        };
-        write!(f,"{}",message)
-    }
-}
+mod syntax_errors;
 
 pub fn parse(text: &str) -> String {
     let  mut tokenizer = Tokenizer::new(text);
@@ -38,19 +25,19 @@ fn parse_f(tokenizer: &mut Tokenizer) -> TreeNode {
             match tkn.token_type {
                 tokenizer::TokenType::Identifier => {
                     tokenizer.scan();
-                    TreeNode::Identifier(val.to_string())
+                    TreeNode::Identifier(LiteralValue::new_identifier(val))
                 },
                 tokenizer::TokenType::Keyword => {
                     tokenizer.scan();
-                    TreeNode::Keyword(val.to_string())
+                    TreeNode::Keyword(LiteralValue::Keyword(val))
                 },
                 tokenizer::TokenType::NumericLiteral => {
                     tokenizer.scan();
-                    TreeNode::NumericLiteral(val.parse::<f64>().unwrap())
+                    TreeNode::NumericLiteral(LiteralValue::new_number(val.parse::<f64>().unwrap()))
                 },
                 tokenizer::TokenType::StringLiteral => {
                     tokenizer.scan();
-                    TreeNode::StringLiteral(val.to_string())
+                    TreeNode::StringLiteral(LiteralValue::new_string(val.to_string()))
                 },
                 tokenizer::TokenType::Symbol => {
                     if tkn.val == "-" {
