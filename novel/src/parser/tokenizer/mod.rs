@@ -3,6 +3,8 @@ use regex::Regex;
 mod token;
 pub use token::{Token,TokenType};
 
+use super::error_handler::SyntaxError;
+
 #[derive(PartialEq, Eq, Hash, Clone)]
 
 pub struct Tokenizer {

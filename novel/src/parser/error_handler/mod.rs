@@ -1,3 +1,8 @@
+pub struct ErrorHandler {
+    hasError: bool,
+    errors: Vec<SyntaxError>
+}
+
 use super::tree_node::TreeNode;
 
 pub enum SyntaxError {

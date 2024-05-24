@@ -1,10 +1,13 @@
 mod tokenizer;
 use tokenizer::Tokenizer;
 
+mod error_handler;
+use error_handler::{SyntaxError,ErrorHandler};
+
 mod tree_node;
 use tree_node::{TreeNode,LiteralValue};
 
-mod syntax_errors;
+
 
 pub fn parse(text: &str) -> String {
     let  mut tokenizer = Tokenizer::new(text);

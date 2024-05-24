@@ -1,6 +1,6 @@
 use std::fmt::write;
 
-use super::syntax_errors::SyntaxError;
+use super::error_handler::SyntaxError;
 
 #[derive(Debug)]
 pub enum LiteralValue {
