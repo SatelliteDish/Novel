@@ -1,6 +1,8 @@
 # Novel-Lang
 Novel is going to be a new esolang based off of a choose your own adventure novel. It is going to be statically typed and incredibly verbose, with a focus on making code into a book-like format.
 
+To anyone cloning: Right now this just looks for a file at novel/src/code/First.nvl, once I finish refactoring what I'm working on now I'll make it take a command line parameter so it can execute on any given file. Currently all that works is parsing addition, subtraction, multiplication, and division equations. Multi-factor equations are allowed but proper order of operations is not followed(yet...). I haven't added braces either, but that'll come very soon. Once I get basic math in place I'll focus on variable declaration. I'm (very loosely) following along with the book Crafting Interpreters, though I'm mostly using it for concepts as opposed to implementation. If you have any comments or questions don't hesitate to reach out to me :)
+
 ## Syntax
 Currently I'm just working on adding in proper math evaluation, so nothing works yet. I'll continue to try and keep this updated as I add more syntax. Features may be added or removed, I'm in extremely early stages if that wasn't obvious.
 
