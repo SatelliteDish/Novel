@@ -1,6 +1,6 @@
 use std::fmt::write;
 
-use super::error_handler::SyntaxError;
+use super::error_handler::{SyntaxError,MathError,Error};
 
 #[derive(Debug)]
 pub enum LiteralValue {
@@ -219,22 +219,17 @@ impl TreeNode {
             TreeNode::Empty => "null".to_string()
         }
     }
-    pub fn eval(&self) -> Result<LiteralValue,SyntaxError> {
+    pub fn eval(&self) -> Result<LiteralValue,Error> {
         match &self {   
             TreeNode::Addition{left,right} => {
                 if let (Ok(left_val),Ok(right_val)) = (&left.eval(),&right.eval()) {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
                         Ok(LiteralValue::new_number(left_num + right_num))
                     } else {
-                        Err(SyntaxError::InvalidOperands(format!(
-                            "\nInvalid Operands to {}. \nLeft: {},\nRight: {}\n",
-                        &self.get_type(),left_val,right_val)))
+                        Err(Error::new(MathError::InvalidOperands, 0, 0))
                     }
                 } else {
-                    Err(SyntaxError::InvalidOperands(format!(
-                        "\nCannot evaluate operands to {} equation",
-                        &self.get_type()
-                    )))
+                    Err(Error::new(MathError::InvalidOperands, 0, 0))
                 }
             }
             TreeNode::Subtraction{left,right} => {
@@ -242,15 +237,10 @@ impl TreeNode {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
                         Ok(LiteralValue::new_number(left_num - right_num))
                     } else {
-                        Err(SyntaxError::InvalidOperands(format!(
-                            "\nInvalid Operands to {}. \nLeft: {},\nRight: {}\n",
-                        &self.get_type(),left_val,right_val)))
+                        Err(Error::new(MathError::InvalidOperands, 0, 0))
                     }
                 } else {
-                    Err(SyntaxError::InvalidOperands(format!(
-                        "\nCannot evaluate operands to {} equation",
-                        &self.get_type()
-                    )))
+                    Err(Error::new(MathError::InvalidOperands, 0, 0))
                 }
             }
             TreeNode::Multiplication{left,right} => {
@@ -258,38 +248,30 @@ impl TreeNode {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
                         Ok(LiteralValue::new_number(left_num * right_num))
                     } else {
-                        Err(SyntaxError::InvalidOperands(format!(
-                            "\nInvalid Operands to {}. \nLeft: {},\nRight: {}\n",
-                        &self.get_type(),left_val,right_val)))
+                        Err(Error::new(MathError::InvalidOperands, 0, 0))
                     }
                 } else {
-                    Err(SyntaxError::InvalidOperands(format!(
-                        "\nCannot evaluate operands to {} equation",
-                        &self.get_type()
-                    )))
+                    Err(Error::new(MathError::InvalidOperands, 0, 0))
                 }
             }
             TreeNode::Division {left, right} => {
                 if let (Ok(left_val),Ok(right_val)) = (&left.eval(),&right.eval()) {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
-                        if *right_num == 0.0 { return Err(SyntaxError::DivideByZero("Cannot divide by zero!".to_string())) }
+                        if *right_num == 0.0 { return Err(Error::new(MathError::DivideByZero,0,0)) }
                         Ok(LiteralValue::new_number(left_num / right_num))
                     } else {
-                        Err(SyntaxError::InvalidOperands(format!(
-                            "\nInvalid Operands to {}. \nLeft: {},\nRight: {}\n",
-                        &self.get_type(),left_val,right_val)))
+                        Err(Error::new(MathError::InvalidOperands, 0, 0))
                     }
                 } else {
-                    Err(SyntaxError::InvalidOperands(format!(
-                        "\nCannot evaluate operands to {} equation",
-                        &self.get_type()
-                    )))
+                    Err(Error::new(MathError::InvalidOperands, 0, 0))
                 }
             },
             TreeNode::NumericLiteral(num) => Ok(num.clone()),
             TreeNode::Empty => Ok(LiteralValue::none()),
-            _ => Err(SyntaxError::NotImplemented("Not implemented".to_string()))
+            _ => Err(Error::new(SyntaxError::NotImplemented, 0, 0))
+
         }
+
     }
 }
 

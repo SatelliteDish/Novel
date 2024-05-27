@@ -1,3 +1,6 @@
+use core::fmt;
+use std::fmt::write;
+
 #[derive(PartialEq,Eq,Clone,Hash,Copy)]
 pub enum TokenType {
     NumericLiteral,
@@ -20,31 +23,70 @@ impl TokenType {
         }
     }
 }
+
+impl std::fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f,"{}", &self.to_string())
+    }
+}
+
 #[derive(PartialEq,Eq,Hash,Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub val: String,
-    len: usize,
+    raw: String,
+    line: usize,
+    start: usize
 }
 impl Token {
-    pub fn new(tkn_type: TokenType, val: String, len: usize) -> Token {
+    pub fn new(tkn_type: TokenType, val: &str, raw: &str, line: &usize, start: &usize) -> Token {
         Token {
             token_type: tkn_type,
-            val,
-            len
+            val: String::from(val),
+            raw: String::from(raw),
+            line: *line,
+            start: *start
         }
     }
     pub fn to_string(&self) -> String {
         format!("
-            '{}': {{
-                val: {}
+            \"{}\": {{
+                \"val\": {},
+                \"raw\": {},
+                \"line\": {},
+                \"start\": {}
             }}
-        ",self.token_type.to_string(),self.val)
+        ",&self.token_type,&self.val,&self.raw,&self.line,&self.start)
     }
     pub fn len(&self) -> usize {
-        self.len
+        self.raw.len()
+    }
+
+    pub fn end(&self) -> usize {
+        self.start + self.len()
     }
     
+}
+
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f,"{}",&self.to_string())
+    }
+}
+
+impl std::fmt::Debug for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f,"
+        \"{}\": {{
+            \"val\": {},
+            \"raw\": {},
+            \"line\": {},
+            \"start\": {},
+            \"len\": {},
+            \"end\": {}
+        }}
+    ",&self.token_type,&self.val,&self.raw,&self.line,&self.start,&self.len(),&self.end())
+    }
 }
 #[cfg(test)]
 mod tests {
