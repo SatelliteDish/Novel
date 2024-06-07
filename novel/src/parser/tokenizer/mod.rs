@@ -3,17 +3,20 @@ use regex::Regex;
 mod token;
 pub use token::{Token,TokenType};
 
-use super::error_handler::SyntaxError;
+mod literal_value;
+pub use literal_value::LiteralValue;
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+use super::error_handler::{Error,ErrorType};
+
+#[derive(PartialEq)]
 
 pub struct Tokenizer {
     text: String,
     current: usize,
-    line: usize,
+    line: u32,
     start: usize,
-    pub token: Option<Token>,
-    pub next_token: Option<Token>
+    token: Result<Token,Error>,
+    next_token: Result<Token,Error>
 }
 impl Tokenizer {
     pub fn new(text: &str) -> Tokenizer {
@@ -22,91 +25,447 @@ impl Tokenizer {
             current: 0,
             line: 0,
             start: 0,
-            next_token: None,
-            token: None
+            next_token: Ok(Token::new_eof(LiteralValue::eof(),"\0",&0,&0).unwrap()),
+            token: Ok(Token::new_eof(LiteralValue::eof(),"\0",&0,&0).unwrap())
         };
         tokenizer.scan();
         tokenizer
     }
-    pub fn scan(&mut self) {
-        //loop to get get next non-whitespace token for current token
-        loop {
-            self.token = match self.get_next_token() {
-                Some(tkn) => {
-                    let tkn_len = match tkn.token_type {
-                        TokenType::StringLiteral => tkn.val.len() + 2,
-                        _ => tkn.val.len()
-                    };
-                    self.current += tkn_len;
-                    Some(tkn)
-                },
-                None => None
-            };
-            match &self.token {
-                Some(tkn) => {
-                    if tkn.token_type != TokenType::Whitespace {
-                        break
-                    }
-                },
-                None => break
-            }
+    //Returns next token and moves current position
+    //Advances self.token and self.next_token
+    pub fn scan(&mut self) -> Result<Token,Error> {
+        let result = match &self.token {
+            Ok(tkn) => Ok(tkn.clone()),
+            Err(e) => Err(Error {
+                error_type: e.error_type.clone(),
+                line: e.line,
+                position: e.position
+            })
+        };
+        self.token = self.get_next_token();
+        if let Ok(tkn) = &self.token {
+            self.increment(tkn.len());
         }
-        loop {
-            self.next_token = self.get_next_token();
-            match &self.next_token {
-                Some(tkn) => {
-                    if tkn.token_type != TokenType::Whitespace {
-                        break
-                    } else {
-                        self.current += tkn.len();
-                    }
-                },
-                None => break
-            }
-        }
-        print!("Current: {}, Next: {}\n",match &self.token {
-            Some(tkn) => tkn.to_string(),
-            None => "None".to_string()
-        },match &self.next_token {
-            Some(tkn) => tkn.to_string(),
-            None => "None".to_string()
-        })
-    }
-    fn get_next_token(&mut self) -> Option<Token>{
-        let mut result = None;
-        let text = &self.text[self.current..];
-        let regex = [
-            (TokenType::NumericLiteral, Regex::new(r"^\d+(\.[\d]+)?").unwrap()),
-            //any number of digits, and maybe a period and one or more digits.
-            (TokenType::Whitespace, Regex::new(r"^[\s\n\t]+").unwrap()),
-            //matches any number of spaces
-            (TokenType::StringLiteral, Regex::new(r#"^"[^"]*""#).unwrap()),
-            //anything between two sets of double quotes, except double quotes
-            (TokenType::StringLiteral, Regex::new(r#"^'[^']*'"#).unwrap()),
-            //anything inside single quotes, except single quotes
-            (TokenType::Symbol, Regex::new(r"^[+/*\-=^%]").unwrap()),
-            //only + / * - = ^ %
-        ];
-        for (key, rgx) in &regex {
-            if rgx.is_match(text) {
-                let mut val = rgx.captures(text).unwrap()[0].to_string();
-                if let TokenType::StringLiteral = key {
-                    val = val[1..{val.len()-1}].to_string();
-                } else if let TokenType::Whitespace = key {
-                    if val == "\n" {
-                        self.line += 1;
-                        self.start = self.current;
-                    }
-                }
-                result = Some(Token::new(*key,match key {
-                        TokenType::StringLiteral => &val[1..val.len()-1],
-                        _ => &val
-                    },&val,&self.line,&self.current
-                ));
-                break;
-            }
-        }
+        self.next_token = self.get_next_token();
         result
+    }
+
+    //Returns a reference to the current token
+    pub fn peek(&self) -> &Result<Token,Error> {
+        &self.token
+    }
+
+    //Returns a reference to the next token
+    pub fn peek_next(&self) -> &Result<Token,Error> {
+        &self.next_token
+    }
+
+    //returns t
+    fn get_next_token(&mut self) -> Result<Token,Error> {
+        let current = &self.text[self.current..];
+        //match regex
+        let mut result = Err(Error::new(
+            ErrorType::MissingToken,
+            &self.line,
+            &self.current
+        ));
+        if let Some(cap) = Regex::new(
+        /**********************************************\
+         *                  if                         * 
+        \**********************************************/
+            r"^[iI]f"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_if(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *              therefore                      * 
+        \**********************************************/
+            r"^; [tT]herefore"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_therefore(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *               equal to                      * 
+        \**********************************************/
+            r"^is equal to"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_eq_to (
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *             not equal to                    * 
+        \**********************************************/
+            r"^(is not|isn't) equal to"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_neq_to(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *                  or                         * 
+        \**********************************************/
+            r"^or"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_or(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *                  not                        * 
+        \**********************************************/
+            r"^(is not|isn't)"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_not(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *                  and                        * 
+        \**********************************************/
+            r"^and"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_and(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *            less or equal to                 * 
+        \**********************************************/
+            r"^is less than or equal to"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_less_eq( 
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *               less than                     * 
+        \**********************************************/
+            r"^is less than"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_less(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *           greater or equal                  * 
+        \**********************************************/
+            r"^is greater than or equal to"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_greater_eq(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *                greater                      * 
+        \**********************************************/
+            r"^is greater than"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_greater(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *                false                        * 
+        \**********************************************/
+            r"^false"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_false(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *                 true                        * 
+        \**********************************************/
+            r"^true"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_true(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *                 none                        * 
+        \**********************************************/
+            r"^none"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_none(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *                  you                        * 
+        \**********************************************/
+            r"^You"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_you(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *              assignment                     * 
+        \**********************************************/
+            r"^((it|he|she) is | they are)"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_assignment(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *              declaration                    * 
+        \**********************************************/
+            r"^[tT]here is a"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_declaration(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+        /**********************************************\
+         *               id keyword                    * 
+        \**********************************************/
+            r"^(called|named|labelled)"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_id_keyword(
+                LiteralValue::new_keyword(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^[A-Z]\w+"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_identifier(
+                LiteralValue::new_identifier(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r#"^"[^"]*""#
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_string(
+                LiteralValue::new_string(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r#"^'[^']*'"#
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_string(
+                LiteralValue::new_string(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^\d+(\.[\d]+)?"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_number(
+                LiteralValue::new_number(&cap[0].parse::<f64>().expect("Non-number matched as numeric literal!!!")),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^,"
+        ).unwrap().captures(current) {
+                result = Ok(Token::new_comma(
+                    LiteralValue::new_symbol(&cap[0]),
+                    &cap[0],
+                    &self.line,
+                    &self.current
+                ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^\."
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_dot(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^!"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_bang(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(r"^\?").unwrap().captures(current) {
+            result = Ok(Token::new_question(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^(‽|\?!|!\?)"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_interrobang(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^;"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_semicolon(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^:"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_colon(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^\("
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_left_paren(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        }  else if let Some(cap) = Regex::new(
+            r"^\)"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_right_paren(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^\+"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_plus(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^-"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_minus(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"\*"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_star(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^/"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_slash(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^\.\.\."
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_ellipsis(
+                LiteralValue::new_symbol(&cap[0]),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(cap) = Regex::new(
+            r"^\z"
+        ).unwrap().captures(current) {
+            result = Ok(Token::new_eof(
+                LiteralValue::eof(),
+                &cap[0],
+                &self.line,
+                &self.current
+            ).unwrap());
+        } else if let Some(_) = Regex::new(
+            r"^\s+"
+        ).unwrap().captures(current) {
+            self.increment(1);
+            result = self.get_next_token()
+        }
+
+        result
+    } 
+
+    fn increment(&mut self, increase: usize) {
+        self.current += increase
     }
 }
 
