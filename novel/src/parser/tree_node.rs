@@ -1,107 +1,323 @@
-use std::fmt::write;
+use std::f32::consts::E;
 
-use super::error_handler::{SyntaxError,MathError,Error};
-
-#[derive(Debug)]
-pub enum LiteralValue {
-    Number(f64),
-    String(String),
-    Boolean(bool),
-    Identifer(String),
-    Keyword(String),
-    None
-}
-impl LiteralValue {
-    pub fn new_number(num: f64) -> Self {
-        LiteralValue::Number(num)
-    }
-
-    pub fn new_string(str: String) -> Self {
-        LiteralValue::String(str)
-    }
-
-    pub fn new_bool(bool: bool) -> Self {
-        LiteralValue::Boolean(bool)
-    }
-
-    pub fn new_identifier(id: String) -> Self {
-        LiteralValue::Identifer(id)
-    }
-    
-    pub fn new_keyword(key: String) -> Self {
-        LiteralValue::Keyword(key)
-    }
-
-    pub fn none() -> Self {
-        LiteralValue::None
-    }
-
-}
-impl PartialEq for LiteralValue {
-    fn eq(&self, other: &Self) -> bool {
-        if let (LiteralValue::Boolean(left), LiteralValue::Boolean(right)) =  (&self,other) {
-            left == right
-        } else if let (LiteralValue::Identifer(left), LiteralValue::Identifer(right)) =  (&self,other) {
-            left == right
-        } else if let (LiteralValue::Keyword(left), LiteralValue::Keyword(right)) =  (&self,other) {
-            left == right
-        } else if let (LiteralValue::None, LiteralValue::None) =  (&self,other) {
-            true
-        } else if let (LiteralValue::Number(left), LiteralValue::Number(right)) =  (&self,other) {
-            left == right
-        } else if let (LiteralValue::String(left), LiteralValue::String(right)) =  (&self,other) {
-            left == right
-        } else {
-            false
-        }
-    }
-}
-impl std::clone::Clone for LiteralValue{
-    fn clone(&self) -> Self {
-        match &self {
-            LiteralValue::Boolean(bool) => LiteralValue::Boolean(*bool),
-            LiteralValue::Identifer(id) => LiteralValue::Identifer(id.to_string()),
-            LiteralValue::Keyword(key) => LiteralValue::Keyword(key.to_string()),
-            LiteralValue::None => LiteralValue::None,
-            LiteralValue::Number(num) => LiteralValue::Number(num.clone()),
-            LiteralValue::String(str) => LiteralValue::String(str.to_string())
-        }
-    }
-}
-impl std::fmt::Display for LiteralValue {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,"{}",
-        match &self {
-            LiteralValue::Number(num) => format!("Number({})",num),
-            LiteralValue::String(str) => format!("String({})",str),
-            LiteralValue::Boolean(bool) => format!("Bool({})",bool),
-            LiteralValue::Identifer(id) => format!("Identifier({})",id),
-            LiteralValue::Keyword(key) => format!("KeyWord({})",key),
-            LiteralValue::None => "None".to_string()
-            }
-        )
-    }
-}
+use super::{error_handler::{Error, ErrorType}, tokenizer::{Token,TokenType}};
+use super::LiteralValue;
 
 pub enum TreeNode {
-    Addition{left: Box<TreeNode>,right: Box<TreeNode>},
-    Subtraction{left: Box<TreeNode>,right: Box<TreeNode>},
-    Multiplication{left: Box<TreeNode>,right: Box<TreeNode>},
-    Division{left: Box<TreeNode>,right: Box<TreeNode>},
-    Negation(Box<TreeNode>),
-    NumericLiteral(LiteralValue),
-    Identifier(LiteralValue),
-    StringLiteral(LiteralValue),
-    Keyword(LiteralValue),
-    Empty
+    NumericLiteral{val: LiteralValue,token: Token},
+    StringLiteral{val: LiteralValue,token: Token},
+    Identifier{val: LiteralValue,token: Token},
+
+    Comma{val: LiteralValue,token: Token},
+    Dot{val: LiteralValue,token: Token},
+    Bang{val: LiteralValue,token: Token},
+    Question{val: LiteralValue,token: Token},
+    Interrobang{val: LiteralValue,token: Token},
+
+    Semicolon{val: LiteralValue,token: Token},
+    Colon{val: LiteralValue,token: Token},
+
+    Parens{val: Box<TreeNode>, left_token: Token, right_token: Token},
+
+    Addition{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    Subtraction{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    Multiplication{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    Division{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    Modulo{left: Box<TreeNode>,right: Box<TreeNode>, token: Token},
+    
+    
+    Negation{arg: Box<TreeNode>,token: Token},
+    Keyword{val: LiteralValue,token: Token},
+    
+    Ellipsis{val: LiteralValue,token: Token},
+
+    If{condition: Box<TreeNode>,expression: Box<TreeNode>,token: Token},
+    Therefore{condition: Box<TreeNode>,expression: Box<TreeNode>,token: Token},
+    
+    EqTo{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    NeqTo{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    Or{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    Not{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    And{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    Less{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    Greater{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    LessEq{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    GreaterEq{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    
+    BooleanLiteral{val: LiteralValue,token: Token},
+    None{val: LiteralValue,token: Token},
+    You{val: LiteralValue,token: Token},
+    Assignment{identifier: LiteralValue, val: LiteralValue,token: Token},
+    Declaration{identifier: LiteralValue, val: Box<TreeNode>,token: Token},
+    
+    EOF{val: LiteralValue,token: Token},
+    Empty{val: LiteralValue,token: Token},
 }
 impl std::fmt::Display for TreeNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,"{}",match &self {
-            TreeNode::Addition{left,right} |
-            TreeNode::Subtraction{left,right} |
-            TreeNode::Multiplication{left,right} |
-            TreeNode::Division{left,right} => {
+        write!(f,"{}",self.to_string())
+    }
+}
+
+impl TreeNode {
+    pub fn from_token(tkn: Token) -> Self {
+        let clone = tkn.clone();
+        let val = tkn.val;
+        match &tkn.token_type {
+            TokenType::NumericLiteral => TreeNode::new_number(val, clone),
+            TokenType::StringLiteral => TreeNode::new_string(val, clone),
+            _ => {
+                TreeNode::Empty{val,token: clone}
+            }
+        }
+    }
+
+    pub fn new_addition(left: Self, right: Self, token: Token) -> Self {
+        TreeNode::Addition {
+            left:Box::new(left),
+            right: Box::new(right),
+            token
+        }
+    }
+
+
+    pub fn new_subtraction(left: Self, right: Self, token: Token) -> Self {
+        TreeNode::Subtraction{
+            left: Box::new(left),
+            right: Box::new(right),
+            token
+        }
+    }
+
+    pub fn new_multiplication(left: Self, right: Self, token: Token) -> Self {
+        TreeNode::Multiplication{
+            left: Box::new(left),
+            right: Box::new(right),
+            token
+        }
+    }
+
+    pub fn new_division(left: Self, right: Self, token: Token) -> Self {
+        TreeNode::Division {
+            left: Box::new(left),
+            right: Box::new(right),
+            token
+        }
+    }
+
+    pub fn new_modulus(left: Self, right: Self, token: Token) -> Self {
+        TreeNode::Modulo {
+            left: Box::new(left),
+            right: Box::new(right),
+            token
+        }
+    }
+
+    pub fn new_number(val: LiteralValue, token: Token) -> Self {
+        TreeNode::NumericLiteral {
+            val,
+            token
+        }
+    }
+
+    pub fn new_string(val: LiteralValue, token: Token) -> Self {
+        TreeNode::StringLiteral {
+            val,
+            token
+        }
+    }
+
+    pub fn new_identifier(val: LiteralValue, token: Token) -> Self {
+        TreeNode::Identifier {
+            val,
+            token
+        }
+    }
+
+    pub fn new_keyword(val: LiteralValue, token: Token) -> Self {
+        TreeNode::Keyword {
+            val,
+            token
+        }
+    }
+
+    pub fn new_empty(val: LiteralValue, token: Token) -> Self {
+        TreeNode::Empty {
+            val,
+            token
+        }
+    }
+
+    pub fn new_comma(val: LiteralValue, token: Token) -> Self {
+        TreeNode::Comma {
+            val,
+            token
+        }
+    }
+
+    pub fn new_dot(val: LiteralValue, token: Token) -> Self {
+        TreeNode::Dot {
+            val,
+            token
+        }
+    }
+
+    pub fn new_bang(val: LiteralValue, token: Token) -> Self {
+        TreeNode::Bang {
+            val,
+            token
+        }
+    }
+
+    pub fn new_question(val: LiteralValue, token: Token) -> Self {
+        TreeNode::Question {
+            val,
+            token
+        }
+    }
+
+    pub fn new_interrobang(val: LiteralValue, token: Token) -> Self {
+        TreeNode::Interrobang {
+            val,
+            token
+        }
+    }
+
+    pub fn new_semicolon(val: LiteralValue, token: Token) -> Self {
+        TreeNode::Semicolon {
+            val,
+            token
+        }
+    }
+
+    pub fn new_colon(val: LiteralValue, token: Token) -> Self {
+        TreeNode::Colon {
+            val,
+            token
+        }
+    }
+
+    pub fn new_if(condition: TreeNode, expression: TreeNode, token: Token) -> Self {
+        TreeNode::If {
+            condition: Box::new(condition),
+            expression: Box::new(expression),
+            token
+        }
+    }
+
+    pub fn new_negation(arg: TreeNode, token: Token) -> Self {
+        TreeNode::Negation {
+            arg: Box::new(arg),
+            token
+        }
+    }
+
+    pub fn new_bool(val: LiteralValue, token: Token) -> Result<Self,Error> {
+        if let LiteralValue::Boolean(_) = val {
+            Ok(TreeNode::BooleanLiteral {
+                val,
+                token
+            })
+        } else {
+            Err(Error::new(
+                ErrorType::InvalidTokenValue,
+                &token.line(),
+                &token.start()
+            ))
+        }
+    }
+
+    pub fn new_none(val: LiteralValue, token: Token) -> Self {
+        TreeNode::None {
+            val,
+            token
+        }
+    }
+
+    pub fn new_eof(val: LiteralValue, token: Token) -> Self {
+        TreeNode::EOF {
+            val,
+            token
+        }
+    }
+
+    pub fn new_you(val: LiteralValue, token: Token) -> Self {
+        TreeNode::You {
+            val,
+            token
+        }
+    }
+
+
+    pub fn get_type(&self) -> String {
+        match &self {
+            TreeNode::NumericLiteral{..} => "NumericLiteral".to_string(),
+            TreeNode::StringLiteral{..} => "StringLiteral".to_string(),
+            TreeNode::Identifier{..} => "Identifier".to_string(),
+            TreeNode::Comma{..} => "Comma".to_string(),
+            TreeNode::Dot{..} => "Dot".to_string(),
+            TreeNode::Bang{..} => "Bang".to_string(),
+            TreeNode::Question{..} => "Question".to_string(),
+            TreeNode::Interrobang{..} => "Interrobang".to_string(),
+            TreeNode::Semicolon{..} => "Semicolon".to_string(),
+            TreeNode::Colon{..} => "Colon".to_string(),
+            TreeNode::Parens{..} => "Parenthesis".to_string(),
+            TreeNode::Addition{..} => "Addition".to_string(),
+            TreeNode::Subtraction{..} => "Subtraction".to_string(),
+            TreeNode::Multiplication{..} => "Multiplication".to_string(),
+            TreeNode::Division{..} => "Division".to_string(),
+            TreeNode::Modulo{..} => "Modulo".to_string(),
+            TreeNode::Negation{..}  => "Negation".to_string(),
+            TreeNode::Keyword{..} => "Keyword".to_string(),
+            TreeNode::Ellipsis{..} => "Ellipsis".to_string(),
+            TreeNode::If{..} => "If".to_string(),
+            TreeNode::Therefore{..} => "Therefore".to_string(),
+            TreeNode::EqTo{..} => "Equal To".to_string(),
+            TreeNode::NeqTo{..} => "Not Equal To".to_string(),
+            TreeNode::Or{..} => "Or".to_string(),
+            TreeNode::Not{..} => "Not".to_string(),
+            TreeNode::And{..} => "And".to_string(),
+            TreeNode::Less{..} => "Less Than".to_string(),
+            TreeNode::Greater{..} => "Greater Than".to_string(),
+            TreeNode::LessEq{..} => "Less Than Or Equal To".to_string(),
+            TreeNode::GreaterEq{..} => "Greater Than Or Equal To".to_string(),
+            TreeNode::BooleanLiteral{..} => "BooleanLiteral".to_string(),
+            TreeNode::None{..} => "None".to_string(),
+            TreeNode::You{..} => "You".to_string(),
+            TreeNode::Assignment{..} => "Assignment".to_string(),
+            TreeNode::Declaration{..} => "Declaration".to_string(),
+            TreeNode::EOF{..} => "EOF".to_string(),
+            TreeNode::Empty{..} => "null".to_string(),
+        }
+    }
+    pub fn to_string(&self) -> String {
+        match &self {
+            TreeNode::NumericLiteral{val,..} |
+            TreeNode::StringLiteral{val,..} |
+            TreeNode::Identifier{val,..} |
+
+            TreeNode::Comma{val,..} |
+            TreeNode::Dot{val,..} |
+            TreeNode::Bang{val,..} |
+            TreeNode::Question{val,..} |
+            TreeNode::Interrobang{val,..} |
+        
+            TreeNode::Semicolon{val,..} |
+            TreeNode::Colon{val,..} => val.to_string(),
+        
+            TreeNode::Parens{val,..} => {
+                format!("
+                    \"{}\": {{
+                        {}
+                    }}
+                ",self.get_type(),val.to_string())
+            },
+        
+            TreeNode::Addition{left,right,..} |
+            TreeNode::Subtraction{left,right,..} |
+            TreeNode::Multiplication{left,right,..} |
+            TreeNode::Division{left,right,..} |
+            TreeNode::Modulo{left,right,..} => {
                 format!("
                     \"{}\": {{
                         \"left\": {{
@@ -112,163 +328,140 @@ impl std::fmt::Display for TreeNode {
                         }}
                     }}
                 ",self.get_type(),left,right)
-            },
-            TreeNode::Negation(arg) => {
+            }
+            
+            
+            TreeNode::Negation{arg,..} => {
                 format!("
                     \"-\" : {{
                         \"arg\": {{
                             {}
                         }} 
                     }}
-                ",arg.to_string())
+                ",arg.to_string()
+                )
             },
-            TreeNode::NumericLiteral(val) |
-            TreeNode::Identifier(val) |
-            TreeNode::Keyword(val) |
-            TreeNode::StringLiteral(val) => val.to_string(),
-            TreeNode::Empty => "null".to_string()
-        })
-    }
-}
-impl TreeNode {
-    pub fn new_addition(left: Self, right: Self) -> Self {
-        TreeNode::Addition {
-            left:Box::new(left),
-            right: Box::new(right)
-        }
-    }
-    pub fn new_subtraction(left: Self, right: Self) -> Self {
-        TreeNode::Subtraction{
-            left: Box::new(left),
-            right: Box::new(right)
-        }
-    }
-    pub fn new_multiplication(left: Self, right: Self) -> Self {
-        TreeNode::Multiplication{
-            left: Box::new(left),
-            right: Box::new(right)
-        }
-    }
-    pub fn new_division(left: Self, right: Self) -> Self {
-        TreeNode::Division {
-            left: Box::new(left),
-            right: Box::new(right)
-        }
-    }
-    pub fn new_number(num: f64) -> Self {
-        TreeNode::NumericLiteral(LiteralValue::Number(num))
-    }
+            TreeNode::Keyword{..} => self.to_string(),
 
-    pub fn new_string(str: String) -> Self {
-        TreeNode::StringLiteral(LiteralValue::String(str))
-    }
+            TreeNode::Ellipsis{..} => self.to_string(),
 
-    pub fn get_type(&self) -> String {
-        match &self {
-            TreeNode::Addition{..} => "Addition".to_string(),
-            TreeNode::Subtraction{..} => "Subtraction".to_string(),
-            TreeNode::Multiplication{..} => "Multiplication".to_string(),
-            TreeNode::Division{..} => "Division".to_string(),
-            TreeNode::Negation(_) => "Negation".to_string(),
-            TreeNode::NumericLiteral(_) => "NumericLiteral".to_string(),
-            TreeNode::Identifier(_) => "Identifer".to_string(),
-            TreeNode::Keyword(_) => "Keyword".to_string(),
-            TreeNode::StringLiteral(_) => "StringLiteral".to_string(),
-            TreeNode::Empty => "Empty".to_string()
-        }
-    }
-    pub fn to_string(&self) -> String {
-        match &self {
-            TreeNode::Addition{left,right} |
-            TreeNode::Subtraction{left,right} |
-            TreeNode::Multiplication{left,right} |
-            TreeNode::Division{left,right} => {
-                let symbol = match &self {
-                    TreeNode::Addition{..} => "+",
-                    TreeNode::Subtraction{..} => "-",
-                    TreeNode::Multiplication{..} => "*",
-                    TreeNode::Division{..} => "/",
-                    _ => "Error"
-                };
+            TreeNode::If{condition,expression,..} |
+            TreeNode::Therefore{condition,expression,..} => {
                 format!("
-                    '{}': {{
-                        'left': {{
+                    \"{}\": {{
+                        \"condition\": {{
                             {}
                         }},
-                        'right': {{
+                        \"expression\": {{
                             {}
                         }}
                     }}
-                ",symbol,left.to_string(),right.to_string())
-            },
-            TreeNode::Negation(arg) => {
+                ",self.get_type(),condition.to_string(),expression.to_string())
+            }
+        
+            TreeNode::EqTo{left,right,..} |
+            TreeNode::NeqTo{left,right,..} |
+            TreeNode::Or{left,right,..} |
+            TreeNode::Not{left,right,..} |
+            TreeNode::And{left,right,..} |
+            TreeNode::Less{left,right,..} |
+            TreeNode::Greater{left,right,..} |
+            TreeNode::LessEq{left,right,..} |
+            TreeNode::GreaterEq{left,right,..} => {
                 format!("
-                    '-' : {{
-                        'arg': {{
+                    \"{}\": {{
+                        \"left\": {{
                             {}
-                        }} 
+                        }},
+                        \"right\": {{
+                            {}
+                        }}
                     }}
-                ",arg.to_string())
+                ",self.get_type(),left.to_string(),right.to_string())
+            }
+
+            TreeNode::BooleanLiteral{val,..} => {
+                format!("
+                    \"{}\": {{
+                        {}
+                    }}
+                ",self.get_type(),val.to_string())
             },
-            TreeNode::NumericLiteral(val) => {
-                val.to_string()
+            TreeNode::None{..} => "None".to_string(),
+            TreeNode::You{..} => "You".to_string(),
+            TreeNode::Assignment{identifier,val,..}  => {
+                format!("
+                    \"{}\": {{
+                        \"{}\": {{
+                            {}
+                        }}
+                    }}
+                ",self.get_type(),identifier.to_string(),val.to_string())
             },
-            TreeNode::Identifier(val) |
-            TreeNode::Keyword(val) |
-            TreeNode::StringLiteral(val)=> val.to_string(),
-            TreeNode::Empty => "null".to_string()
+            TreeNode::Declaration{identifier,val,..} => {
+                format!("
+                    \"{}\": {{
+                        \"{}\": {{
+                            {}
+                        }}
+                    }}
+                ",self.get_type(),identifier.to_string(),val.to_string())
+            },
+
+            TreeNode::EOF{..} => "EOF".to_string(),
+            TreeNode::Empty{..} => "null".to_string(),
         }
     }
     pub fn eval(&self) -> Result<LiteralValue,Error> {
         match &self {   
-            TreeNode::Addition{left,right} => {
+            TreeNode::Addition{left,right,token} => {
                 if let (Ok(left_val),Ok(right_val)) = (&left.eval(),&right.eval()) {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
-                        Ok(LiteralValue::new_number(left_num + right_num))
+                        Ok(LiteralValue::new_number(&(left_num + right_num)))
                     } else {
-                        Err(Error::new(MathError::InvalidOperands, 0, 0))
+                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                     }
                 } else {
-                    Err(Error::new(MathError::InvalidOperands, 0, 0))
+                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                 }
             }
-            TreeNode::Subtraction{left,right} => {
+            TreeNode::Subtraction{left,right,token} => {
                 if let (Ok(left_val),Ok(right_val)) = (&left.eval(),&right.eval()) {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
-                        Ok(LiteralValue::new_number(left_num - right_num))
+                        Ok(LiteralValue::new_number(&(left_num - right_num)))
                     } else {
-                        Err(Error::new(MathError::InvalidOperands, 0, 0))
+                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                     }
                 } else {
-                    Err(Error::new(MathError::InvalidOperands, 0, 0))
+                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                 }
             }
-            TreeNode::Multiplication{left,right} => {
+            TreeNode::Multiplication{left,right,token} => {
                 if let (Ok(left_val),Ok(right_val)) = (&left.eval(),&right.eval()) {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
-                        Ok(LiteralValue::new_number(left_num * right_num))
+                        Ok(LiteralValue::new_number(&(left_num * right_num)))
                     } else {
-                        Err(Error::new(MathError::InvalidOperands, 0, 0))
+                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                     }
                 } else {
-                    Err(Error::new(MathError::InvalidOperands, 0, 0))
+                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                 }
             }
-            TreeNode::Division {left, right} => {
+            TreeNode::Division {left, right,token} => {
                 if let (Ok(left_val),Ok(right_val)) = (&left.eval(),&right.eval()) {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
-                        if *right_num == 0.0 { return Err(Error::new(MathError::DivideByZero,0,0)) }
-                        Ok(LiteralValue::new_number(left_num / right_num))
+                        if *right_num == 0.0 { return Err(Error::new(ErrorType::DivideByZero,token.line(), token.start())) }
+                        Ok(LiteralValue::new_number(&(left_num / right_num)))
                     } else {
-                        Err(Error::new(MathError::InvalidOperands, 0, 0))
+                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                     }
                 } else {
-                    Err(Error::new(MathError::InvalidOperands, 0, 0))
+                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                 }
             },
-            TreeNode::NumericLiteral(num) => Ok(num.clone()),
-            TreeNode::Empty => Ok(LiteralValue::none()),
-            _ => Err(Error::new(SyntaxError::NotImplemented, 0, 0))
+            TreeNode::NumericLiteral{val,..} => Ok(val.clone()),
+            TreeNode::Empty{..} => Ok(LiteralValue::none()),
+            _ => Err(Error::new(ErrorType::NotImplemented, &0, &0))
 
         }
 
@@ -276,20 +469,25 @@ impl TreeNode {
 }
 
 mod tests {
-    use super::{TreeNode,LiteralValue};
+    use super::{TreeNode,LiteralValue,Token,TokenType};
     use rand::prelude::*;
+
+    fn get_test_token() -> Token {
+        Token::new(TokenType::NumericLiteral, LiteralValue::new_number(&0.0), &"0", &0, &0)
+    }
 
     #[test]
     fn new_add() {
         for i in -100..100 {
             let i_f = i as f64;
             let add = TreeNode::new_addition(
-                TreeNode::new_number(i_f),
-                TreeNode::new_number(100.0-i_f)
+                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                get_test_token()
             );
-            if let TreeNode::Addition {left, right} = add {
+            if let TreeNode::Addition {left, right,..} = add {
                 let left_val = match left.as_ref() {
-                    TreeNode::NumericLiteral(val) => match &val {
+                    TreeNode::NumericLiteral{val,..} => match &val {
                         LiteralValue::Number(num) => num,
                         _ => {
                             assert_eq!(true,false,
@@ -306,7 +504,7 @@ mod tests {
                     }
                 };
                 let right_val = match right.as_ref() {
-                    TreeNode::NumericLiteral(num) => num,
+                    TreeNode::NumericLiteral{val,..} => val,
                     _ => {
                         assert_eq!(true,false,
                             "\nRight branch of addition not a Numeric Literal, is {} instead.\n",
@@ -317,7 +515,7 @@ mod tests {
                 assert_eq!(*left_val,i_f,
                     "\nLeft side of addition should be {} but is {}!\n",
                     i_f,*left_val);
-                assert_eq!(*right_val,LiteralValue::new_number(100.0-i_f),
+                assert_eq!(*right_val,LiteralValue::new_number(&(100.0-i_f)),
                     "\nRight side of addition should be {} but is {}!\n",
                     i_f,*right_val);
                 continue;
@@ -332,8 +530,9 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let add = TreeNode::new_addition(
-                TreeNode::NumericLiteral(LiteralValue::new_number(i_f)),
-                TreeNode::NumericLiteral(LiteralValue::new_number(100.0-i_f))
+                TreeNode::new_number(LiteralValue::new_number (&i_f), get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)), get_test_token()),
+                get_test_token()
             );
             if let TreeNode::Addition { .. } = add {
                 match &add.eval() {
@@ -370,12 +569,13 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let sub = TreeNode::new_subtraction(
-                TreeNode::new_number(i_f),
-                TreeNode::new_number(100.0-i_f)
+                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                get_test_token()
             );
-            if let TreeNode::Subtraction { left, right } = sub {
+            if let TreeNode::Subtraction { left, right ,..} = sub {
                 let left_val = match left.as_ref() {
-                    TreeNode::NumericLiteral(num) => num,
+                    TreeNode::NumericLiteral{val,..} => val,
                     _ => {
                         assert_eq!(true,false,
                             "\nLeft branch of subtraction not a Numeric Literal, is {} instead.\n",
@@ -384,7 +584,7 @@ mod tests {
                     }
                 };
                 let right_val = match right.as_ref() {
-                    TreeNode::NumericLiteral(num) => num,
+                    TreeNode::NumericLiteral{val,..} => val,
                     _ => {
                         assert_eq!(true,false,
                             "\nRight branch of subtraction not a Numeric Literal, is {} instead.\n",
@@ -392,9 +592,9 @@ mod tests {
                         return;
                     }
                 };
-                assert_eq!(*left_val,LiteralValue::new_number(i_f),
+                assert_eq!(*left_val,LiteralValue::new_number(&i_f),
                     "\nLeft side of subtraction should be {} but is {}!\n",i_f,*left_val);
-                assert_eq!(*right_val,LiteralValue::new_number(100.0-i_f),
+                assert_eq!(*right_val,LiteralValue::new_number(&(100.0-i_f)),
                     "\nRight side of subtraction should be {} but is {}!\n",i_f,*right_val);
                 continue;
             }
@@ -409,8 +609,9 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let sub = TreeNode::new_subtraction(
-                TreeNode::new_number(i_f),
-                TreeNode::new_number(100.0-i_f)
+                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                get_test_token()
             );
             if let TreeNode::Subtraction { .. } = sub {
                 match &sub.eval() {
@@ -447,12 +648,13 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let mult = TreeNode::new_multiplication(
-                TreeNode::new_number(i_f),
-                TreeNode::new_number(100.0-i_f)
+                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                get_test_token()
             );
-            if let TreeNode::Multiplication { left, right } = mult {
+            if let TreeNode::Multiplication { left, right,.. } = mult {
                 let left_val = match left.as_ref() {
-                    TreeNode::NumericLiteral(num) => num,
+                    TreeNode::NumericLiteral{val,..} => val,
                     _ => {
                         assert_eq!(true,false,
                             "\nLeft branch of multiplication not a Numeric Literal, is {} instead.\n",
@@ -461,7 +663,7 @@ mod tests {
                     }
                 };
                 let right_val = match right.as_ref() {
-                    TreeNode::NumericLiteral(num) => num,
+                    TreeNode::NumericLiteral{val,..} => val,
                     _ => {
                         assert_eq!(true,false,
                             "\nRight branch of multiplication not a Numeric Literal, is {} instead.\n",
@@ -469,9 +671,9 @@ mod tests {
                         return;
                     }
                 };
-                assert_eq!(*left_val,LiteralValue::new_number(i_f),
+                assert_eq!(*left_val,LiteralValue::new_number(&i_f),
                     "\nLeft side of multiplication should be {} but is {}!\n",i_f,*left_val);
-                assert_eq!(*right_val,LiteralValue::new_number(100.0-i_f),
+                assert_eq!(*right_val,LiteralValue::new_number(&(100.0-i_f)),
                     "\nRight side of multiplication should be {} but is {}!\n",i_f,*right_val);
                 continue;
             }
@@ -486,8 +688,9 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let mult = TreeNode::new_multiplication(
-                TreeNode::new_number(i_f),
-                TreeNode::new_number(100.0-i_f)
+                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                get_test_token()
             );
             if let TreeNode::Multiplication { .. } = mult {
                 match &mult.eval() {
@@ -524,12 +727,13 @@ mod tests {
         for i in -100..99 {
             let i_f = i as f64;
             let div = TreeNode::new_division(
-                TreeNode::new_number(i_f),
-                TreeNode::new_number(100.0-i_f)
+                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                get_test_token()
             );
-            if let TreeNode::Division { left, right } = div {
+            if let TreeNode::Division { left, right,.. } = div {
                 let left_val = match left.as_ref() {
-                    TreeNode::NumericLiteral(num) => num,
+                    TreeNode::NumericLiteral{val,..} => val,
                     _ => {
                         assert_eq!(true,false,
                             "\nLeft branch of division not a Numeric Literal, is {} instead.\n",
@@ -538,7 +742,7 @@ mod tests {
                     }
                 };
                 let right_val = match right.as_ref() {
-                    TreeNode::NumericLiteral(num) => num,
+                    TreeNode::NumericLiteral{val,..} => val,
                     _ => {
                         assert_eq!(true,false,
                             "\nRight branch of division not a Numeric Literal, is {} instead.\n",
@@ -546,9 +750,9 @@ mod tests {
                         return;
                     }
                 };
-                assert_eq!(*left_val,LiteralValue::new_number(i_f),
+                assert_eq!(*left_val,LiteralValue::new_number(&i_f),
                     "\nLeft side of division should be {} but is {}!\n",i_f,*left_val);
-                assert_eq!(*right_val,LiteralValue::new_number(100.0-i_f),
+                assert_eq!(*right_val,LiteralValue::new_number(&(100.0-i_f)),
                     "\nRight side of division should be {} but is {}!\n",i_f,*right_val);
                 continue;
             }
@@ -563,8 +767,9 @@ mod tests {
         for i in -100..99 {
             let i_f = i as f64;
             let div = TreeNode::new_division(
-                TreeNode::new_number(i_f),
-                TreeNode::new_number(100.0-i_f)
+                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                get_test_token()
             );
             if let TreeNode::Division { .. } = div {
                 match &div.eval() {
@@ -599,8 +804,9 @@ mod tests {
     #[test]
     fn cant_divide_by_zero() {
         let div = TreeNode::new_division(
-          TreeNode::new_number(10.0),
-          TreeNode::new_number(0.0)  
+          TreeNode::new_number(LiteralValue::new_number(&10.0),get_test_token()),
+          TreeNode::new_number(LiteralValue::new_number(&0.0),get_test_token()),
+          get_test_token()
         );
         match &div.eval() {
             Ok(val) => assert_eq!(true,false, "Allowed division by zero!\n Val: {}",val),
@@ -614,12 +820,14 @@ mod tests {
             let val1 = rand::random::<f64>() * 10.0  * i_f;
             let val2 = rand::random::<f64>() * 10.0  * i_f;
             let mult1 = TreeNode::new_multiplication(
-                TreeNode::new_number(val1),
-                TreeNode::new_number(val2)
+                TreeNode::new_number(LiteralValue::new_number(&val1),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(&val2),get_test_token()),
+                get_test_token()
             );
             let mult2 = TreeNode::new_multiplication(
-                TreeNode::new_number(val2),
-                TreeNode::new_number(val1)
+                TreeNode::new_number(LiteralValue::new_number(&val2),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(&val1),get_test_token()),
+                get_test_token()
             );
             if let (Ok(product1),Ok(product2)) = (mult1.eval(), mult2.eval()) {
                 assert_eq!(product1, product2,"Error, communitive property not correct on Multiplication.");
