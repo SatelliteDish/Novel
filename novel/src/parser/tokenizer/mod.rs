@@ -19,6 +19,7 @@ pub struct Tokenizer {
     next_token: Result<Token,Error>
 }
 impl Tokenizer {
+
     pub fn new(text: &str) -> Tokenizer {
         let mut tokenizer = Tokenizer {
             text: String::from(text),
@@ -30,6 +31,7 @@ impl Tokenizer {
         };
         tokenizer.scan();
         tokenizer
+    
     }
     //Returns next token and moves current position
     //Advances self.token and self.next_token
@@ -70,8 +72,9 @@ impl Tokenizer {
             &self.current
         ));
         if let Some(cap) = Regex::new(
+
         /**********************************************\
-         *                  if                         * 
+        *                   if                         * 
         \**********************************************/
             r"^[iI]f"
         ).unwrap().captures(current) {
@@ -82,8 +85,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *              therefore                      * 
+        *               therefore                      * 
         \**********************************************/
             r"^; [tT]herefore"
         ).unwrap().captures(current) {
@@ -94,8 +98,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *               equal to                      * 
+        *                equal to                      * 
         \**********************************************/
             r"^is equal to"
         ).unwrap().captures(current) {
@@ -106,8 +111,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
         /**********************************************\
-         *             not equal to                    * 
+        *              not equal to                    * 
         \**********************************************/
             r"^(is not|isn't) equal to"
         ).unwrap().captures(current) {
@@ -118,8 +124,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *                  or                         * 
+        *                   or                         * 
         \**********************************************/
             r"^or"
         ).unwrap().captures(current) {
@@ -130,8 +137,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *                  not                        * 
+        *                   not                        * 
         \**********************************************/
             r"^(is not|isn't)"
         ).unwrap().captures(current) {
@@ -142,8 +150,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *                  and                        * 
+        *                   and                        * 
         \**********************************************/
             r"^and"
         ).unwrap().captures(current) {
@@ -154,8 +163,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *            less or equal to                 * 
+        *             less or equal to                 * 
         \**********************************************/
             r"^is less than or equal to"
         ).unwrap().captures(current) {
@@ -166,8 +176,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *               less than                     * 
+        *                less than                     * 
         \**********************************************/
             r"^is less than"
         ).unwrap().captures(current) {
@@ -178,8 +189,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *           greater or equal                  * 
+        *            greater or equal                  * 
         \**********************************************/
             r"^is greater than or equal to"
         ).unwrap().captures(current) {
@@ -190,8 +202,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *                greater                      * 
+        *                 greater                      * 
         \**********************************************/
             r"^is greater than"
         ).unwrap().captures(current) {
@@ -202,8 +215,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+    
         /**********************************************\
-         *                false                        * 
+        *                 false                        * 
         \**********************************************/
             r"^false"
         ).unwrap().captures(current) {
@@ -214,8 +228,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *                 true                        * 
+        *                  true                        * 
         \**********************************************/
             r"^true"
         ).unwrap().captures(current) {
@@ -226,8 +241,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *                 none                        * 
+        *                  none                        * 
         \**********************************************/
             r"^none"
         ).unwrap().captures(current) {
@@ -238,8 +254,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *                  you                        * 
+        *                   you                        * 
         \**********************************************/
             r"^You"
         ).unwrap().captures(current) {
@@ -250,8 +267,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *              assignment                     * 
+        *               assignment                     * 
         \**********************************************/
             r"^((it|he|she) is | they are)"
         ).unwrap().captures(current) {
@@ -262,8 +280,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *              declaration                    * 
+        *               declaration                    * 
         \**********************************************/
             r"^[tT]here is a"
         ).unwrap().captures(current) {
@@ -274,8 +293,9 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
         /**********************************************\
-         *               id keyword                    * 
+        *                id keyword                    * 
         \**********************************************/
             r"^(called|named|labelled)"
         ).unwrap().captures(current) {
@@ -286,6 +306,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+        
+        /**********************************************\
+        *                identifier                    * 
+        \**********************************************/
             r"^[A-Z]\w+"
         ).unwrap().captures(current) {
             result = Ok(Token::new_identifier(
@@ -295,6 +319,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                  string                      * 
+        \**********************************************/
             r#"^"[^"]*""#
         ).unwrap().captures(current) {
             result = Ok(Token::new_string(
@@ -313,6 +341,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                  number                      * 
+        \**********************************************/
             r"^\d+(\.[\d]+)?"
         ).unwrap().captures(current) {
             result = Ok(Token::new_number(
@@ -322,6 +354,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                   comma                      * 
+        \**********************************************/
             r"^,"
         ).unwrap().captures(current) {
                 result = Ok(Token::new_comma(
@@ -331,6 +367,10 @@ impl Tokenizer {
                     &self.current
                 ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                    dot                       * 
+        \**********************************************/
             r"^\."
         ).unwrap().captures(current) {
             result = Ok(Token::new_dot(
@@ -340,6 +380,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                   bang                       * 
+        \**********************************************/
             r"^!"
         ).unwrap().captures(current) {
             result = Ok(Token::new_bang(
@@ -348,7 +392,13 @@ impl Tokenizer {
                 &self.line,
                 &self.current
             ).unwrap());
-        } else if let Some(cap) = Regex::new(r"^\?").unwrap().captures(current) {
+        } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                 question                     * 
+        \**********************************************/
+            r"^\?"
+        ).unwrap().captures(current) {
             result = Ok(Token::new_question(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
@@ -356,6 +406,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                 interrobang                  * 
+        \**********************************************/
             r"^(‽|\?!|!\?)"
         ).unwrap().captures(current) {
             result = Ok(Token::new_interrobang(
@@ -365,6 +419,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                semicolon                     * 
+        \**********************************************/
             r"^;"
         ).unwrap().captures(current) {
             result = Ok(Token::new_semicolon(
@@ -374,6 +432,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                    colon                     * 
+        \**********************************************/
             r"^:"
         ).unwrap().captures(current) {
             result = Ok(Token::new_colon(
@@ -383,6 +445,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                left paren                    * 
+        \**********************************************/
             r"^\("
         ).unwrap().captures(current) {
             result = Ok(Token::new_left_paren(
@@ -392,6 +458,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         }  else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                 right paren                  * 
+        \**********************************************/
             r"^\)"
         ).unwrap().captures(current) {
             result = Ok(Token::new_right_paren(
@@ -401,6 +471,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                    plus                      * 
+        \**********************************************/
             r"^\+"
         ).unwrap().captures(current) {
             result = Ok(Token::new_plus(
@@ -410,6 +484,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                   minus                      * 
+        \**********************************************/
             r"^-"
         ).unwrap().captures(current) {
             result = Ok(Token::new_minus(
@@ -419,6 +497,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                    star                      * 
+        \**********************************************/
             r"\*"
         ).unwrap().captures(current) {
             result = Ok(Token::new_star(
@@ -428,6 +510,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                   slash                      * 
+        \**********************************************/
             r"^/"
         ).unwrap().captures(current) {
             result = Ok(Token::new_slash(
@@ -437,6 +523,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                 ellipsis                     * 
+        \**********************************************/
             r"^\.\.\."
         ).unwrap().captures(current) {
             result = Ok(Token::new_ellipsis(
@@ -446,6 +536,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
+       
+        /**********************************************\
+        *                    eof                       * 
+        \**********************************************/
             r"^\z"
         ).unwrap().captures(current) {
             result = Ok(Token::new_eof(
@@ -455,6 +549,10 @@ impl Tokenizer {
                 &self.current
             ).unwrap());
         } else if let Some(_) = Regex::new(
+       
+        /**********************************************\
+        *                whitespace                    * 
+        \**********************************************/
             r"^\s+"
         ).unwrap().captures(current) {
             self.increment(1);
