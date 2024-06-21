@@ -8,8 +8,6 @@ mod tree_node;
 use tree_node::TreeNode;
 
 
-
-
 pub fn parse(text: &str) -> String {
     let  mut tokenizer = Tokenizer::new(text);
     let mut error_handler = ErrorHandler::new();
@@ -22,6 +20,7 @@ pub fn parse(text: &str) -> String {
     }
     result_tree.to_string()
 }
+
 /*
     Parse Factor:
     F -> ID | f64 | -F
@@ -30,6 +29,7 @@ fn parse_f(tokenizer: &mut Tokenizer, error_handler: &mut ErrorHandler) -> TreeN
     let node = match &tokenizer.peek() {
         Ok(_) => {
             let tkn = tokenizer.scan().unwrap();
+            
             match tkn.token_type {
                 TokenType::NumericLiteral => {
                     TreeNode::new_number(tkn.clone().val, tkn)
@@ -114,8 +114,8 @@ fn parse_f(tokenizer: &mut Tokenizer, error_handler: &mut ErrorHandler) -> TreeN
             error_handler.report(
                 Error::new(
                    ErrorType::UnexpectedToken,
-                   &e.line,
-                   &e.position
+                   e.line,
+                   e.position
                ));
            TreeNode::new_empty(
             LiteralValue::none(),

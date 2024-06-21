@@ -9,9 +9,11 @@ pub enum LiteralValue {
     EOF,
     None
 }
+
 impl LiteralValue {
-    pub fn new_number(num: &f64) -> Self {
-        LiteralValue::Number(*num)
+
+    pub fn new_number(num: f64) -> Self {
+        LiteralValue::Number(num)
     }
 
     pub fn new_string(str: &str) -> Self {
@@ -66,6 +68,7 @@ impl PartialEq for LiteralValue {
         }
     }
 }
+
 impl std::clone::Clone for LiteralValue{
     fn clone(&self) -> Self {
         match &self {
@@ -80,6 +83,7 @@ impl std::clone::Clone for LiteralValue{
         }
     }
 }
+
 impl std::fmt::Display for LiteralValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,"{}",

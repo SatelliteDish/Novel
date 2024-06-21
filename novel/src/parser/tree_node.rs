@@ -221,8 +221,8 @@ impl TreeNode {
         } else {
             Err(Error::new(
                 ErrorType::InvalidTokenValue,
-                &token.line(),
-                &token.start()
+                token.line(),
+                token.start()
             ))
         }
     }
@@ -417,7 +417,7 @@ impl TreeNode {
             TreeNode::Addition{left,right,token} => {
                 if let (Ok(left_val),Ok(right_val)) = (&left.eval(),&right.eval()) {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
-                        Ok(LiteralValue::new_number(&(left_num + right_num)))
+                        Ok(LiteralValue::new_number(left_num + right_num))
                     } else {
                         Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                     }
@@ -428,7 +428,7 @@ impl TreeNode {
             TreeNode::Subtraction{left,right,token} => {
                 if let (Ok(left_val),Ok(right_val)) = (&left.eval(),&right.eval()) {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
-                        Ok(LiteralValue::new_number(&(left_num - right_num)))
+                        Ok(LiteralValue::new_number(left_num - right_num))
                     } else {
                         Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                     }
@@ -439,7 +439,7 @@ impl TreeNode {
             TreeNode::Multiplication{left,right,token} => {
                 if let (Ok(left_val),Ok(right_val)) = (&left.eval(),&right.eval()) {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
-                        Ok(LiteralValue::new_number(&(left_num * right_num)))
+                        Ok(LiteralValue::new_number(left_num * right_num))
                     } else {
                         Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                     }
@@ -451,7 +451,7 @@ impl TreeNode {
                 if let (Ok(left_val),Ok(right_val)) = (&left.eval(),&right.eval()) {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
                         if *right_num == 0.0 { return Err(Error::new(ErrorType::DivideByZero,token.line(), token.start())) }
-                        Ok(LiteralValue::new_number(&(left_num / right_num)))
+                        Ok(LiteralValue::new_number(left_num / right_num))
                     } else {
                         Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                     }
@@ -461,7 +461,7 @@ impl TreeNode {
             },
             TreeNode::NumericLiteral{val,..} => Ok(val.clone()),
             TreeNode::Empty{..} => Ok(LiteralValue::none()),
-            _ => Err(Error::new(ErrorType::NotImplemented, &0, &0))
+            _ => Err(Error::new(ErrorType::NotImplemented, 0, 0))
 
         }
 
@@ -473,7 +473,7 @@ mod tests {
     use rand::prelude::*;
 
     fn get_test_token() -> Token {
-        Token::new(TokenType::NumericLiteral, LiteralValue::new_number(&0.0), &"0", &0, &0)
+        Token::new(TokenType::NumericLiteral, LiteralValue::new_number(0.0), &"0", 0, 0)
     }
 
     #[test]
@@ -481,8 +481,8 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let add = TreeNode::new_addition(
-                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
                 get_test_token()
             );
             if let TreeNode::Addition {left, right,..} = add {
@@ -515,7 +515,7 @@ mod tests {
                 assert_eq!(*left_val,i_f,
                     "\nLeft side of addition should be {} but is {}!\n",
                     i_f,*left_val);
-                assert_eq!(*right_val,LiteralValue::new_number(&(100.0-i_f)),
+                assert_eq!(*right_val,LiteralValue::new_number((100.0-i_f)),
                     "\nRight side of addition should be {} but is {}!\n",
                     i_f,*right_val);
                 continue;
@@ -530,8 +530,8 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let add = TreeNode::new_addition(
-                TreeNode::new_number(LiteralValue::new_number (&i_f), get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)), get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number (i_f), get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)), get_test_token()),
                 get_test_token()
             );
             if let TreeNode::Addition { .. } = add {
@@ -569,8 +569,8 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let sub = TreeNode::new_subtraction(
-                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
                 get_test_token()
             );
             if let TreeNode::Subtraction { left, right ,..} = sub {
@@ -592,9 +592,9 @@ mod tests {
                         return;
                     }
                 };
-                assert_eq!(*left_val,LiteralValue::new_number(&i_f),
+                assert_eq!(*left_val,LiteralValue::new_number(i_f),
                     "\nLeft side of subtraction should be {} but is {}!\n",i_f,*left_val);
-                assert_eq!(*right_val,LiteralValue::new_number(&(100.0-i_f)),
+                assert_eq!(*right_val,LiteralValue::new_number((100.0-i_f)),
                     "\nRight side of subtraction should be {} but is {}!\n",i_f,*right_val);
                 continue;
             }
@@ -609,8 +609,8 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let sub = TreeNode::new_subtraction(
-                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
                 get_test_token()
             );
             if let TreeNode::Subtraction { .. } = sub {
@@ -648,8 +648,8 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let mult = TreeNode::new_multiplication(
-                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
                 get_test_token()
             );
             if let TreeNode::Multiplication { left, right,.. } = mult {
@@ -671,9 +671,9 @@ mod tests {
                         return;
                     }
                 };
-                assert_eq!(*left_val,LiteralValue::new_number(&i_f),
+                assert_eq!(*left_val,LiteralValue::new_number(i_f),
                     "\nLeft side of multiplication should be {} but is {}!\n",i_f,*left_val);
-                assert_eq!(*right_val,LiteralValue::new_number(&(100.0-i_f)),
+                assert_eq!(*right_val,LiteralValue::new_number((100.0-i_f)),
                     "\nRight side of multiplication should be {} but is {}!\n",i_f,*right_val);
                 continue;
             }
@@ -688,8 +688,8 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let mult = TreeNode::new_multiplication(
-                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
                 get_test_token()
             );
             if let TreeNode::Multiplication { .. } = mult {
@@ -727,8 +727,8 @@ mod tests {
         for i in -100..99 {
             let i_f = i as f64;
             let div = TreeNode::new_division(
-                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(100.0-i_f),get_test_token()),
                 get_test_token()
             );
             if let TreeNode::Division { left, right,.. } = div {
@@ -750,9 +750,9 @@ mod tests {
                         return;
                     }
                 };
-                assert_eq!(*left_val,LiteralValue::new_number(&i_f),
+                assert_eq!(*left_val,LiteralValue::new_number(i_f),
                     "\nLeft side of division should be {} but is {}!\n",i_f,*left_val);
-                assert_eq!(*right_val,LiteralValue::new_number(&(100.0-i_f)),
+                assert_eq!(*right_val,LiteralValue::new_number(100.0-i_f),
                     "\nRight side of division should be {} but is {}!\n",i_f,*right_val);
                 continue;
             }
@@ -767,8 +767,8 @@ mod tests {
         for i in -100..99 {
             let i_f = i as f64;
             let div = TreeNode::new_division(
-                TreeNode::new_number(LiteralValue::new_number(&i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number(&(100.0-i_f)),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
+                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
                 get_test_token()
             );
             if let TreeNode::Division { .. } = div {
@@ -804,8 +804,8 @@ mod tests {
     #[test]
     fn cant_divide_by_zero() {
         let div = TreeNode::new_division(
-          TreeNode::new_number(LiteralValue::new_number(&10.0),get_test_token()),
-          TreeNode::new_number(LiteralValue::new_number(&0.0),get_test_token()),
+          TreeNode::new_number( LiteralValue::new_number(10.0), get_test_token() ),
+          TreeNode::new_number( LiteralValue::new_number(0.0), get_test_token() ),
           get_test_token()
         );
         match &div.eval() {
@@ -820,13 +820,13 @@ mod tests {
             let val1 = rand::random::<f64>() * 10.0  * i_f;
             let val2 = rand::random::<f64>() * 10.0  * i_f;
             let mult1 = TreeNode::new_multiplication(
-                TreeNode::new_number(LiteralValue::new_number(&val1),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number(&val2),get_test_token()),
+                TreeNode::new_number( LiteralValue::new_number(val1), get_test_token() ),
+                TreeNode::new_number( LiteralValue::new_number(val2), get_test_token() ),
                 get_test_token()
             );
             let mult2 = TreeNode::new_multiplication(
-                TreeNode::new_number(LiteralValue::new_number(&val2),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number(&val1),get_test_token()),
+                TreeNode::new_number( LiteralValue::new_number(val2), get_test_token() ),
+                TreeNode::new_number( LiteralValue::new_number(val1), get_test_token() ),
                 get_test_token()
             );
             if let (Ok(product1),Ok(product2)) = (mult1.eval(), mult2.eval()) {

@@ -3,23 +3,26 @@ pub struct ErrorHandler {
 }
 
 impl ErrorHandler {
+    
     pub fn new() -> Self {
         ErrorHandler {
             errors: Vec::new()
         }
     }
+
     pub fn report(&mut self, error: Error) {
         self.errors.push(error);
     }
+
     pub fn has_errors(&self) -> bool {
         self.errors.len() > 0
+
     }
     pub fn throw_errors(&self) {
         for err in &self.errors {
-            print!("\n{}",err.to_string());
+            eprintln!("\n{}",err.to_string());
         }
-        print!("\n");
-        panic!();
+        std::process::exit(1);
     }
 }
 
@@ -30,13 +33,15 @@ pub struct Error {
 }
 
 impl Error {
-    pub fn new(error_type: ErrorType,line: &u32, position: &usize) -> Self {
+
+    pub fn new(error_type: ErrorType,line: u32, position: usize) -> Self {
         Error {
             error_type,
-            line: *line,
-            position: *position
+            line: line,
+            position: position
         }
     }
+
     pub fn to_string(&self) -> String {
         format!("{}[{}:{}]",self.error_type
         .get_type(),self.line,self.position)
@@ -45,10 +50,10 @@ impl Error {
 
 impl PartialEq for Error {
     fn eq(&self, other: &Self) -> bool {
-        if *self.error_type.to_string() != *other.error_type.to_string() {
+        if self.error_type.to_string() != other.error_type.to_string() {
             return false
         }
-        &self.line == &other.line && &self.position == &other.position
+        self.line == other.line && self.position == other.position
     }
 }
 
@@ -57,6 +62,7 @@ impl std::fmt::Debug for Error {
         write!(f,"{}",&self.to_string())
     }
 }
+
 #[derive(Clone)]
 pub enum ErrorType {
     DivideByZero,

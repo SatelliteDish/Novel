@@ -26,15 +26,18 @@ impl Tokenizer {
             current: 0,
             line: 0,
             start: 0,
-            next_token: Ok(Token::new_eof(LiteralValue::eof(),"\0",&0,&0).unwrap()),
-            token: Ok(Token::new_eof(LiteralValue::eof(),"\0",&0,&0).unwrap())
+            next_token: Ok(Token::new_eof(LiteralValue::eof(),"\0",0,0).unwrap()),
+            token: Ok(Token::new_eof(LiteralValue::eof(),"\0",0,0).unwrap())
         };
         tokenizer.scan();
         tokenizer
     
     }
-    //Returns next token and moves current position
-    //Advances self.token and self.next_token
+
+    /********************************************
+    *Returns next token and moves current position
+    *Advances self.token and self.next_token
+    *********************************************/
     pub fn scan(&mut self) -> Result<Token,Error> {
         let result = match &self.token {
             Ok(tkn) => Ok(tkn.clone()),
@@ -68,8 +71,8 @@ impl Tokenizer {
         //match regex
         let mut result = Err(Error::new(
             ErrorType::MissingToken,
-            &self.line,
-            &self.current
+            self.line,
+            self.current
         ));
         if let Some(cap) = Regex::new(
 
@@ -81,8 +84,8 @@ impl Tokenizer {
             result = Ok(Token::new_if(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -94,8 +97,8 @@ impl Tokenizer {
             result = Ok(Token::new_therefore(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -107,8 +110,8 @@ impl Tokenizer {
             result = Ok(Token::new_eq_to (
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -120,8 +123,8 @@ impl Tokenizer {
             result = Ok(Token::new_neq_to(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -133,8 +136,8 @@ impl Tokenizer {
             result = Ok(Token::new_or(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -146,8 +149,8 @@ impl Tokenizer {
             result = Ok(Token::new_not(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -159,8 +162,8 @@ impl Tokenizer {
             result = Ok(Token::new_and(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -172,8 +175,8 @@ impl Tokenizer {
             result = Ok(Token::new_less_eq( 
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -185,8 +188,8 @@ impl Tokenizer {
             result = Ok(Token::new_less(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -198,8 +201,8 @@ impl Tokenizer {
             result = Ok(Token::new_greater_eq(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -211,8 +214,8 @@ impl Tokenizer {
             result = Ok(Token::new_greater(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
     
@@ -224,8 +227,8 @@ impl Tokenizer {
             result = Ok(Token::new_false(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -237,8 +240,8 @@ impl Tokenizer {
             result = Ok(Token::new_true(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -250,8 +253,8 @@ impl Tokenizer {
             result = Ok(Token::new_none(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -263,8 +266,8 @@ impl Tokenizer {
             result = Ok(Token::new_you(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -276,8 +279,8 @@ impl Tokenizer {
             result = Ok(Token::new_assignment(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -289,8 +292,8 @@ impl Tokenizer {
             result = Ok(Token::new_declaration(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -302,8 +305,8 @@ impl Tokenizer {
             result = Ok(Token::new_id_keyword(
                 LiteralValue::new_keyword(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
         
@@ -315,8 +318,8 @@ impl Tokenizer {
             result = Ok(Token::new_identifier(
                 LiteralValue::new_identifier(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -328,8 +331,8 @@ impl Tokenizer {
             result = Ok(Token::new_string(
                 LiteralValue::new_string(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
             r#"^'[^']*'"#
@@ -337,8 +340,8 @@ impl Tokenizer {
             result = Ok(Token::new_string(
                 LiteralValue::new_string(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -348,10 +351,10 @@ impl Tokenizer {
             r"^\d+(\.[\d]+)?"
         ).unwrap().captures(current) {
             result = Ok(Token::new_number(
-                LiteralValue::new_number(&cap[0].parse::<f64>().expect("Non-number matched as numeric literal!!!")),
+                LiteralValue::new_number(cap[0].parse::<f64>().expect("Non-number matched as numeric literal!!!")),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -363,8 +366,8 @@ impl Tokenizer {
                 result = Ok(Token::new_comma(
                     LiteralValue::new_symbol(&cap[0]),
                     &cap[0],
-                    &self.line,
-                    &self.current
+                    self.line,
+                    self.current
                 ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -376,8 +379,8 @@ impl Tokenizer {
             result = Ok(Token::new_dot(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -389,8 +392,8 @@ impl Tokenizer {
             result = Ok(Token::new_bang(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -402,8 +405,8 @@ impl Tokenizer {
             result = Ok(Token::new_question(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -415,8 +418,8 @@ impl Tokenizer {
             result = Ok(Token::new_interrobang(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -428,8 +431,8 @@ impl Tokenizer {
             result = Ok(Token::new_semicolon(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -441,8 +444,8 @@ impl Tokenizer {
             result = Ok(Token::new_colon(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -454,8 +457,8 @@ impl Tokenizer {
             result = Ok(Token::new_left_paren(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         }  else if let Some(cap) = Regex::new(
        
@@ -467,8 +470,8 @@ impl Tokenizer {
             result = Ok(Token::new_right_paren(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -480,8 +483,8 @@ impl Tokenizer {
             result = Ok(Token::new_plus(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -493,8 +496,8 @@ impl Tokenizer {
             result = Ok(Token::new_minus(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -506,8 +509,8 @@ impl Tokenizer {
             result = Ok(Token::new_star(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -519,8 +522,8 @@ impl Tokenizer {
             result = Ok(Token::new_slash(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -532,8 +535,8 @@ impl Tokenizer {
             result = Ok(Token::new_ellipsis(
                 LiteralValue::new_symbol(&cap[0]),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(cap) = Regex::new(
        
@@ -545,8 +548,8 @@ impl Tokenizer {
             result = Ok(Token::new_eof(
                 LiteralValue::eof(),
                 &cap[0],
-                &self.line,
-                &self.current
+                self.line,
+                self.current
             ).unwrap());
         } else if let Some(_) = Regex::new(
        
