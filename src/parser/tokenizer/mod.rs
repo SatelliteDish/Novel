@@ -10,26 +10,26 @@ use super::error_handler::{Error,ErrorType};
 
 #[derive(PartialEq)]
 
-pub struct Tokenizer {
-    text: String,
+pub struct Tokenizer<'a> {
+    text: &'a str,
     current: usize,
     line: u32,
     start: usize,
     token: Result<Token,Error>,
     next_token: Result<Token,Error>
 }
-impl Tokenizer {
+impl Tokenizer<'_> {
 
     pub fn new(text: &str) -> Tokenizer {
         let mut tokenizer = Tokenizer {
-            text: String::from(text),
+            text,
             current: 0,
             line: 0,
             start: 0,
             next_token: Ok(Token::new_eof(LiteralValue::eof(),"\0",0,0).unwrap()),
             token: Ok(Token::new_eof(LiteralValue::eof(),"\0",0,0).unwrap())
         };
-        tokenizer.scan();
+        let _ = tokenizer.scan();
         tokenizer
     
     }
@@ -61,9 +61,9 @@ impl Tokenizer {
     }
 
     //Returns a reference to the next token
-    pub fn peek_next(&self) -> &Result<Token,Error> {
-        &self.next_token
-    }
+    //pub fn peek_next(&self) -> &Result<Token,Error> {
+    //    &self.next_token
+    //}
 
     //returns t
     fn get_next_token(&mut self) -> Result<Token,Error> {
