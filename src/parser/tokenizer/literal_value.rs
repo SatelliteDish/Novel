@@ -1,39 +1,39 @@
-#[derive(Debug)]
-pub enum LiteralValue {
+#[derive(Debug,PartialEq,Clone,Copy)]
+pub enum LiteralValue<'a> {
     Number(f64),
-    String(String),
+    String(&'a str),
     Boolean(bool),
-    Identifer(String),
-    Keyword(String),
-    Symbol(String),
+    Identifer(&'a str),
+    Keyword(&'a str),
+    Symbol(&'a str),
     EOF,
     None
 }
 
-impl LiteralValue {
+impl<'a> LiteralValue<'a> {
 
     pub fn new_number(num: f64) -> Self {
         LiteralValue::Number(num)
     }
 
-    pub fn new_string(str: &str) -> Self {
-        LiteralValue::String(str.to_string())
+    pub fn new_string(str: &'a str) -> Self {
+        LiteralValue::String(str)
     }
 
     pub fn new_bool(bool: &bool) -> Self {
         LiteralValue::Boolean(*bool)
     }
 
-    pub fn new_identifier(id: &str) -> Self {
-        LiteralValue::Identifer(id.to_string())
+    pub fn new_identifier(id: &'a str) -> Self {
+        LiteralValue::Identifer(id)
     }
     
-    pub fn new_keyword(key: &str) -> Self {
-        LiteralValue::Keyword(key.to_string())
+    pub fn new_keyword(key: &'a str) -> Self {
+        LiteralValue::Keyword(key)
     }
 
-    pub fn new_symbol(sym: &str) -> Self {
-        LiteralValue::Symbol(sym.to_string())
+    pub fn new_symbol(sym: &'a str) -> Self {
+        LiteralValue::Symbol(sym)
     }
 
     pub fn eof() -> Self {
@@ -45,46 +45,7 @@ impl LiteralValue {
     }
 }
 
-impl PartialEq for LiteralValue {
-    fn eq(&self, other: &Self) -> bool {
-        if let (LiteralValue::Boolean(left), LiteralValue::Boolean(right)) =  (&self,other) {
-            left == right
-        } else if let (LiteralValue::Identifer(left), LiteralValue::Identifer(right)) =  (&self,other) {
-            left == right
-        } else if let (LiteralValue::Keyword(left), LiteralValue::Keyword(right)) =  (&self,other) {
-            left == right
-        } else if let (LiteralValue::None, LiteralValue::None) =  (&self,other) {
-            true
-        } else if let (LiteralValue::Number(left), LiteralValue::Number(right)) =  (&self,other) {
-            left == right
-        } else if let (LiteralValue::String(left), LiteralValue::String(right)) =  (&self,other) {
-            left == right
-        } else if let (LiteralValue::Symbol(left), LiteralValue::Symbol(right)) =  (&self,other) {
-            left == right
-        } else if let (LiteralValue::EOF, LiteralValue::EOF) =  (&self,other) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
-impl std::clone::Clone for LiteralValue{
-    fn clone(&self) -> Self {
-        match &self {
-            LiteralValue::Boolean(bool) => LiteralValue::Boolean(*bool),
-            LiteralValue::Identifer(id) => LiteralValue::Identifer(id.to_string()),
-            LiteralValue::Keyword(key) => LiteralValue::Keyword(key.to_string()),
-            LiteralValue::None => LiteralValue::None,
-            LiteralValue::Number(num) => LiteralValue::Number(num.clone()),
-            LiteralValue::String(str) => LiteralValue::String(str.to_string()),
-            LiteralValue::Symbol(sym) => LiteralValue::Symbol(sym.to_string()),
-            LiteralValue::EOF => LiteralValue::EOF,
-        }
-    }
-}
-
-impl std::fmt::Display for LiteralValue {
+impl std::fmt::Display for LiteralValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,"{}",
         match &self {

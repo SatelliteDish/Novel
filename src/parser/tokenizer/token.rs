@@ -28,7 +28,7 @@ pub enum TokenType {
     False, True, None, You,
     Assignment, Declaration, IdKeyword,
 
-    EOF, Invalid
+    Whitespace, EOF, Invalid, Empty
 }
 
 impl TokenType {
@@ -72,6 +72,8 @@ impl TokenType {
             TokenType::Declaration => "Declaration".to_string(),
             TokenType::Assignment => "Assignment".to_string(),
             TokenType::EOF => "EOF".to_string(),
+            TokenType::Empty => "Empty".to_string(),
+            TokenType::Whitespace => "Whitespace".to_string(),
             TokenType::Invalid => "Error".to_string(),
         }
     }
@@ -83,22 +85,22 @@ impl std::fmt::Display for TokenType {
     }
 }
 
-#[derive(PartialEq,Clone)]
-pub struct Token {
+#[derive(PartialEq,Clone,Copy)]
+pub struct Token<'a> {
     pub token_type: TokenType,
-    pub val: LiteralValue,
-    raw: String,
+    pub val: LiteralValue<'a>,
+    raw: &'a str,
     line: u32,
     start: usize
 }
 
-impl Token {
+impl<'a> Token<'a> {
 
-    pub fn new(tkn_type: TokenType, val: LiteralValue, raw: &str, line: u32, start: usize) -> Token {
+    pub fn new(tkn_type: TokenType, val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Token<'a> {
         Token {
             token_type: tkn_type,
             val,
-            raw: String::from(raw),
+            raw,
             line,
             start
         }
@@ -130,13 +132,37 @@ impl Token {
     pub fn start(&self) -> usize {
         self.start
     }
+
+    //========================================
+    //TODO: Make a macro for these constructors
+    //=========================================
     
-    pub fn new_eof(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn empty() -> Self {
+        Token {
+            token_type: TokenType::Empty,
+            val: LiteralValue::none(),
+            raw: "",
+            line: 0,
+            start: 0
+        }
+    }
+
+    pub fn new_whitespace(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Token<'a> {
+        Token {
+            token_type: TokenType::Whitespace,
+            val,
+            raw,
+            line,
+            start
+        }
+    }
+
+    pub fn new_eof(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::EOF = &val {
             Ok(Token {
                 token_type: TokenType::EOF,
                 val,
-                raw: raw.to_string(),
+                raw,
                 line,
                 start
             })
@@ -149,18 +175,18 @@ impl Token {
         Token {
             token_type: TokenType::Invalid,
             val: LiteralValue::none(),
-            raw: "\0".to_string(),
+            raw: "\0",
             line: 0,
             start: 0
         }
     }
 
-    pub fn new_identifier(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_identifier(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Identifer(_) = val {
             Ok(Token {
                 token_type: TokenType::Identifier,
                 val,
-                raw: raw.to_string(),
+                raw,
                 line,
                 start
             })
@@ -169,12 +195,12 @@ impl Token {
         }
     }
 
-    pub fn new_string(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_string(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::String(_) = val {
             Ok(Token {
                 token_type: TokenType::StringLiteral,
                 val,
-                raw: raw.to_string(),
+                raw,
                 line,
                 start
             })
@@ -183,9 +209,9 @@ impl Token {
         }
     }
     
-    pub fn new_comma(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_comma(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "," {
+            if *sym != "," {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -194,8 +220,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Comma,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -204,9 +230,9 @@ impl Token {
         }
     }
     
-    pub fn new_dot(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_dot(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "." {
+            if *sym != "." {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -215,8 +241,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Dot,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -225,9 +251,9 @@ impl Token {
         }
     }
 
-    pub fn new_bang(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_bang(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "!" {
+            if *sym != "!" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -236,8 +262,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Bang,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -246,9 +272,9 @@ impl Token {
         }
     }
 
-    pub fn new_question(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_question(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "?" {
+            if *sym != "?" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -257,8 +283,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Question,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -267,9 +293,9 @@ impl Token {
         }
     }
     
-    pub fn new_interrobang(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_interrobang(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "‽" || sym != "?!" || sym != "!?" {
+            if *sym != "‽" || *sym != "?!" || *sym != "!?" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -278,8 +304,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Interrobang,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -288,9 +314,9 @@ impl Token {
         }
     }
     
-    pub fn new_semicolon(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_semicolon(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != ";" {
+            if *sym != ";" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -299,8 +325,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Semicolon,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -309,9 +335,9 @@ impl Token {
         }
     }
     
-    pub fn new_colon(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_colon(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != ":" {
+            if *sym != ":" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -320,8 +346,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Colon,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -330,9 +356,9 @@ impl Token {
         }
     }
     
-    pub fn new_left_paren(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_left_paren(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "(" {
+            if *sym != "(" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -341,8 +367,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::LeftParen,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -351,9 +377,9 @@ impl Token {
         }
     }
     
-    pub fn new_right_paren(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_right_paren(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != ")" {
+            if *sym != ")" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -362,8 +388,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::RightParen,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -372,31 +398,30 @@ impl Token {
         }
     }
     
-    pub fn new_plus(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_plus(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "+" {
+            if *sym != "+" {
                 return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
+                        ErrorType::InvalidTokenValue,
+                        line,
+                        start
                     ))
-                    }
-                    Ok(Token {
-                        token_type: TokenType::Plus,
-                    val: val.clone(),
-                    raw: raw.to_string(),
-                    line,
-                    start
                 }
-            )
+            Ok(Token {
+                token_type: TokenType::Plus,
+                val,
+                raw,
+                line,
+                start
+            })
         } else {
             Err(Error::new(ErrorType::InvalidTokenValue, line, start))
         }
     }
     
-    pub fn new_minus(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_minus(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "-" {
+            if *sym != "-" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -405,8 +430,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Minus,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -415,9 +440,9 @@ impl Token {
         }
     }
     
-    pub fn new_star(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_star(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "*" {
+            if *sym != "*" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -426,8 +451,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Star,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -436,9 +461,9 @@ impl Token {
         }
     }
     
-    pub fn new_slash(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_slash(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "/" {
+            if *sym != "/" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -447,8 +472,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Slash,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -457,9 +482,9 @@ impl Token {
         }
     }
     
-    pub fn new_mod(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_mod(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "%" {
+            if *sym != "%" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -468,8 +493,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Mod,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -478,9 +503,9 @@ impl Token {
         }
     }
     
-    pub fn new_ellipsis(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_ellipsis(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Symbol(sym) = &val {
-            if sym != "..." {
+            if *sym != "..." {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -489,8 +514,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Ellipsis,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -499,9 +524,9 @@ impl Token {
         }
     }
     
-    pub fn new_if(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_if(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "If" || key != "if" {
+            if *key != "If" || *key != "if" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -510,8 +535,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::If,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -520,9 +545,9 @@ impl Token {
         }
     }
     
-    pub fn new_eq_to(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_eq_to(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "is equal to" {
+            if *key != "is equal to" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -531,8 +556,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::EqTo,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -541,9 +566,9 @@ impl Token {
         }
     }
     
-    pub fn new_neq_to(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_neq_to(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "is not equal to" || key != "isn't equal to" {
+            if *key != "is not equal to" || *key != "isn't equal to" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -552,8 +577,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::NeqTo,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -562,9 +587,9 @@ impl Token {
         }
     }
     
-    pub fn new_or(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_or(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "or" {
+            if *key != "or" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -573,8 +598,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Or,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -583,9 +608,9 @@ impl Token {
         }
     }
     
-    pub fn new_not(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_not(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "is not" || key != "isn't" {
+            if *key != "is not" || *key != "isn't" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -594,8 +619,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Not,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -604,9 +629,9 @@ impl Token {
         }
     }
     
-    pub fn new_and(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_and(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "and" {
+            if *key != "and" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -615,8 +640,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::And,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -625,9 +650,9 @@ impl Token {
         }
     }
     
-    pub fn new_less_eq(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_less_eq(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "is less than or equal to" {
+            if *key != "is less than or equal to" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -636,8 +661,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::LessEq,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -646,9 +671,9 @@ impl Token {
         }
     }
     
-    pub fn new_less(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_less(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "is less than" {
+            if *key != "is less than" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -657,8 +682,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Less,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -667,9 +692,9 @@ impl Token {
         }
     }
     
-    pub fn new_greater_eq(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_greater_eq(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "is greater than or equal to" {
+            if *key != "is greater than or equal to" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -678,8 +703,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::GreaterEq,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -688,9 +713,9 @@ impl Token {
         }
     }
     
-    pub fn new_greater(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_greater(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "is greater than" {
+            if *key != "is greater than" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -699,8 +724,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Greater,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -709,9 +734,9 @@ impl Token {
         }
     }
     
-    pub fn new_therefore(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_therefore(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "; Therefore" || key != "; therefore" {
+            if *key != "; Therefore" || *key != "; therefore" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -720,8 +745,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Therefore,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -730,9 +755,9 @@ impl Token {
         }
     }
     
-    pub fn new_false(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_false(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "false" {
+            if *key != "false" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -741,8 +766,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::False,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -751,9 +776,9 @@ impl Token {
         }
     }
     
-    pub fn new_true(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_true(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "true" {
+            if *key != "true" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -762,8 +787,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::True,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -772,9 +797,9 @@ impl Token {
         }
     }
     
-    pub fn new_none (val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_none (val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "none" {
+            if *key != "none" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -783,8 +808,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::None,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -793,9 +818,9 @@ impl Token {
         }
     }
     
-    pub fn new_you(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_you(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "You" {
+            if *key != "You" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -804,8 +829,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::You,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -814,12 +839,12 @@ impl Token {
         }
     }
     
-    pub fn new_assignment(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_assignment(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "it is" ||
-               key != "he is" ||
-               key != "she is" ||
-               key != "they are" {
+            if *key != "it is" ||
+               *key != "he is" ||
+               *key != "she is" ||
+               *key != "they are" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -828,8 +853,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Therefore,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -838,9 +863,9 @@ impl Token {
         }
     }
     
-    pub fn new_declaration(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_declaration(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "; Therefore" || key != "; therefore" {
+            if *key != "; Therefore" || *key != "; therefore" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -849,8 +874,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Therefore,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -859,11 +884,11 @@ impl Token {
         }
     }
     
-    pub fn new_id_keyword(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_id_keyword(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
-            if key != "called" ||
-               key != "named" ||
-               key != "labelled" {
+            if *key != "called" ||
+               *key != "named" ||
+               *key != "labelled" {
                 return Err(Error::new(
                     ErrorType::InvalidTokenValue,
                     line,
@@ -872,8 +897,8 @@ impl Token {
             }
             Ok(Token {
                 token_type: TokenType::Therefore,
-                val: val.clone(),
-                raw: raw.to_string(),
+                val,
+                raw,
                 line,
                 start
             })
@@ -882,12 +907,12 @@ impl Token {
         }
     }
 
-    pub fn new_number(val: LiteralValue, raw: &str, line: u32, start: usize) -> Result<Self,Error> {
+    pub fn new_number(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Number(_) = val {
             Ok(Token {
                 token_type: TokenType::NumericLiteral,
                 val,
-                raw: raw.to_string(),
+                raw,
                 line,
                 start
             })
@@ -897,13 +922,13 @@ impl Token {
     }
 }
 
-impl std::fmt::Display for Token {
+impl std::fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f,"{}",&self.to_string())
     }
 }
 
-impl std::fmt::Debug for Token {
+impl std::fmt::Debug for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f,"
         \"{}\": {{

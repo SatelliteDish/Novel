@@ -1,78 +1,75 @@
-use std::f32::consts::E;
-
 use super::{error_handler::{Error, ErrorType}, tokenizer::{Token,TokenType}};
 use super::LiteralValue;
 
-pub enum TreeNode {
-    NumericLiteral{val: LiteralValue,token: Token},
-    StringLiteral{val: LiteralValue,token: Token},
-    Identifier{val: LiteralValue,token: Token},
+pub enum TreeNode<'a> {
+    NumericLiteral{val: LiteralValue<'a>,token: Token<'a>},
+    StringLiteral{val: LiteralValue<'a>,token: Token<'a>},
+    Identifier{val: LiteralValue<'a>,token: Token<'a>},
 
-    Comma{val: LiteralValue,token: Token},
-    Dot{val: LiteralValue,token: Token},
-    Bang{val: LiteralValue,token: Token},
-    Question{val: LiteralValue,token: Token},
-    Interrobang{val: LiteralValue,token: Token},
+    Comma{val: LiteralValue<'a>,token: Token<'a>},
+    Dot{val: LiteralValue<'a>,token: Token<'a>},
+    Bang{val: LiteralValue<'a>,token: Token<'a>},
+    Question{val: LiteralValue<'a>,token: Token<'a>},
+    Interrobang{val: LiteralValue<'a>,token: Token<'a>},
 
-    Semicolon{val: LiteralValue,token: Token},
-    Colon{val: LiteralValue,token: Token},
+    Semicolon{val: LiteralValue<'a>,token: Token<'a>},
+    Colon{val: LiteralValue<'a>,token: Token<'a>},
 
-    Parens{val: Box<TreeNode>, left_token: Token, right_token: Token},
+    Parens{val: Box<TreeNode<'a>>, left_token: Token<'a>, right_token: Token<'a>},
 
-    Addition{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    Subtraction{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    Multiplication{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    Division{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    Modulo{left: Box<TreeNode>,right: Box<TreeNode>, token: Token},
+    Addition{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    Subtraction{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    Multiplication{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    Division{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    Modulo{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>, token: Token<'a>},
     
     
-    Negation{arg: Box<TreeNode>,token: Token},
-    Keyword{val: LiteralValue,token: Token},
+    Negation{arg: Box<TreeNode<'a>>,token: Token<'a>},
+    Keyword{val: LiteralValue<'a>,token: Token<'a>},
     
-    Ellipsis{val: LiteralValue,token: Token},
+    Ellipsis{val: LiteralValue<'a>,token: Token<'a>},
 
-    If{condition: Box<TreeNode>,expression: Box<TreeNode>,token: Token},
-    Therefore{condition: Box<TreeNode>,expression: Box<TreeNode>,token: Token},
+    If{condition: Box<TreeNode<'a>>,expression: Box<TreeNode<'a>>,token: Token<'a>},
+    Therefore{condition: Box<TreeNode<'a>>,expression: Box<TreeNode<'a>>,token: Token<'a>},
     
-    EqTo{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    NeqTo{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    Or{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    Not{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    And{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    Less{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    Greater{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    LessEq{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
-    GreaterEq{left: Box<TreeNode>,right: Box<TreeNode>,token: Token},
+    EqTo{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    NeqTo{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    Or{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    Not{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    And{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    Less{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    Greater{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    LessEq{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
+    GreaterEq{left: Box<TreeNode<'a>>,right: Box<TreeNode<'a>>,token: Token<'a>},
     
-    BooleanLiteral{val: LiteralValue,token: Token},
-    None{val: LiteralValue,token: Token},
-    You{val: LiteralValue,token: Token},
-    Assignment{identifier: LiteralValue, val: LiteralValue,token: Token},
-    Declaration{identifier: LiteralValue, val: Box<TreeNode>,token: Token},
+    BooleanLiteral{val: LiteralValue<'a>,token: Token<'a>},
+    None{val: LiteralValue<'a>,token: Token<'a>},
+    You{val: LiteralValue<'a>,token: Token<'a>},
+    Assignment{identifier: LiteralValue<'a>, val: LiteralValue<'a>,token: Token<'a>},
+    Declaration{identifier: LiteralValue<'a>, val: Box<TreeNode<'a>>,token: Token<'a>},
     
-    EOF{val: LiteralValue,token: Token},
-    Empty{val: LiteralValue,token: Token},
+    EOF{val: LiteralValue<'a>,token: Token<'a>},
+    Empty{val: LiteralValue<'a>,token: Token<'a>},
 }
-impl std::fmt::Display for TreeNode {
+impl std::fmt::Display for TreeNode<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,"{}",self.to_string())
     }
 }
 
-impl TreeNode {
-    pub fn from_token(tkn: Token) -> Self {
-        let clone = tkn.clone();
+impl<'a> TreeNode<'a> {
+    pub fn from_token(tkn: Token<'a>) -> Self {
         let val = tkn.val;
         match &tkn.token_type {
-            TokenType::NumericLiteral => TreeNode::new_number(val, clone),
-            TokenType::StringLiteral => TreeNode::new_string(val, clone),
+            TokenType::NumericLiteral => TreeNode::new_number(val, tkn),
+            TokenType::StringLiteral => TreeNode::new_string(val, tkn),
             _ => {
-                TreeNode::Empty{val,token: clone}
+                TreeNode::Empty{val,token: tkn}
             }
         }
     }
 
-    pub fn new_addition(left: Self, right: Self, token: Token) -> Self {
+    pub fn new_addition(left: Self, right: Self, token: Token<'a>) -> Self {
         TreeNode::Addition {
             left:Box::new(left),
             right: Box::new(right),
@@ -81,7 +78,7 @@ impl TreeNode {
     }
 
 
-    pub fn new_subtraction(left: Self, right: Self, token: Token) -> Self {
+    pub fn new_subtraction(left: Self, right: Self, token: Token<'a>) -> Self {
         TreeNode::Subtraction{
             left: Box::new(left),
             right: Box::new(right),
@@ -89,7 +86,7 @@ impl TreeNode {
         }
     }
 
-    pub fn new_multiplication(left: Self, right: Self, token: Token) -> Self {
+    pub fn new_multiplication(left: Self, right: Self, token: Token<'a>) -> Self {
         TreeNode::Multiplication{
             left: Box::new(left),
             right: Box::new(right),
@@ -97,7 +94,7 @@ impl TreeNode {
         }
     }
 
-    pub fn new_division(left: Self, right: Self, token: Token) -> Self {
+    pub fn new_division(left: Self, right: Self, token: Token<'a>) -> Self {
         TreeNode::Division {
             left: Box::new(left),
             right: Box::new(right),
@@ -105,7 +102,7 @@ impl TreeNode {
         }
     }
 
-    pub fn new_modulus(left: Self, right: Self, token: Token) -> Self {
+    pub fn new_modulus(left: Self, right: Self, token: Token<'a>) -> Self {
         TreeNode::Modulo {
             left: Box::new(left),
             right: Box::new(right),
@@ -113,91 +110,91 @@ impl TreeNode {
         }
     }
 
-    pub fn new_number(val: LiteralValue, token: Token) -> Self {
+    pub fn new_number(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::NumericLiteral {
             val,
             token
         }
     }
 
-    pub fn new_string(val: LiteralValue, token: Token) -> Self {
+    pub fn new_string(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::StringLiteral {
             val,
             token
         }
     }
 
-    pub fn new_identifier(val: LiteralValue, token: Token) -> Self {
+    pub fn new_identifier(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::Identifier {
             val,
             token
         }
     }
 
-    pub fn new_keyword(val: LiteralValue, token: Token) -> Self {
+    pub fn new_keyword(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::Keyword {
             val,
             token
         }
     }
 
-    pub fn new_empty(val: LiteralValue, token: Token) -> Self {
+    pub fn new_empty(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::Empty {
             val,
             token
         }
     }
 
-    pub fn new_comma(val: LiteralValue, token: Token) -> Self {
+    pub fn new_comma(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::Comma {
             val,
             token
         }
     }
 
-    pub fn new_dot(val: LiteralValue, token: Token) -> Self {
+    pub fn new_dot(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::Dot {
             val,
             token
         }
     }
 
-    pub fn new_bang(val: LiteralValue, token: Token) -> Self {
+    pub fn new_bang(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::Bang {
             val,
             token
         }
     }
 
-    pub fn new_question(val: LiteralValue, token: Token) -> Self {
+    pub fn new_question(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::Question {
             val,
             token
         }
     }
 
-    pub fn new_interrobang(val: LiteralValue, token: Token) -> Self {
+    pub fn new_interrobang(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::Interrobang {
             val,
             token
         }
     }
 
-    pub fn new_semicolon(val: LiteralValue, token: Token) -> Self {
+    pub fn new_semicolon(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::Semicolon {
             val,
             token
         }
     }
 
-    pub fn new_colon(val: LiteralValue, token: Token) -> Self {
+    pub fn new_colon(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::Colon {
             val,
             token
         }
     }
 
-    pub fn new_if(condition: TreeNode, expression: TreeNode, token: Token) -> Self {
+    pub fn new_if(condition: TreeNode<'a>, expression: TreeNode<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::If {
             condition: Box::new(condition),
             expression: Box::new(expression),
@@ -205,14 +202,14 @@ impl TreeNode {
         }
     }
 
-    pub fn new_negation(arg: TreeNode, token: Token) -> Self {
+    pub fn new_negation(arg: TreeNode<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::Negation {
             arg: Box::new(arg),
             token
         }
     }
 
-    pub fn new_bool(val: LiteralValue, token: Token) -> Result<Self,Error> {
+    pub fn new_bool(val: LiteralValue<'a>, token: Token<'a>) -> Result<TreeNode<'a>,Error> {
         if let LiteralValue::Boolean(_) = val {
             Ok(TreeNode::BooleanLiteral {
                 val,
@@ -227,21 +224,21 @@ impl TreeNode {
         }
     }
 
-    pub fn new_none(val: LiteralValue, token: Token) -> Self {
+    pub fn new_none(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::None {
             val,
             token
         }
     }
 
-    pub fn new_eof(val: LiteralValue, token: Token) -> Self {
+    pub fn new_eof(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::EOF {
             val,
             token
         }
     }
 
-    pub fn new_you(val: LiteralValue, token: Token) -> Self {
+    pub fn new_you(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
         TreeNode::You {
             val,
             token
@@ -472,7 +469,7 @@ mod tests {
     use super::{TreeNode,LiteralValue,Token,TokenType};
     use rand::prelude::*;
 
-    fn get_test_token() -> Token {
+    fn get_test_token() -> Token<'static> {
         Token::new(TokenType::NumericLiteral, LiteralValue::new_number(0.0), &"0", 0, 0)
     }
 

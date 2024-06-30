@@ -1,6 +1,7 @@
 use std::fs::read_to_string;
 
 mod parser;
+use parser::Parser;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -17,8 +18,12 @@ fn main() {
             std::process::exit(1);
         }
     };
-    println!("{}",std::env::current_dir().unwrap().display());
-    println!("{}\n",parser::parse(&text));
+    let mut parser: Parser = Parser::new(&text);
+    
+    unsafe {
+        let tree = &parser.parse();
+        println!("{}\n",tree);
+    }
 }
 
 fn get_file(path: &str) -> Result<String,String> { 
