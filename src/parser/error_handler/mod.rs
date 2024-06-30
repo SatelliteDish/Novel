@@ -1,20 +1,29 @@
-static mut ERRORS: Vec<Error> = Vec::new();
-
-
-pub unsafe fn report(error: Error) {
-    ERRORS.push(error)
+pub struct ErrorHandler {
+    errors: Vec<Error>
 }
 
-pub unsafe fn has_errors() -> bool {
-    ERRORS.len() > 0
-}
-pub unsafe fn throw_errors() {
-    for err in ERRORS.clone() {
-        eprintln!("\n{}",err.to_string());
+impl ErrorHandler {
+    pub fn new() -> Self {
+        ErrorHandler {
+            errors: Vec::new()
+        }
     }
-    std::process::exit(1);
-}
 
+    pub fn report(&mut self,error: Error) {
+        self.errors.push(error)
+    }
+    
+    pub fn has_errors(&mut self) -> bool {
+        self.errors.len() > 0
+    }
+
+    pub fn throw_errors(&mut self) {
+        for err in &self.errors {
+            eprintln!("\n{}",err.to_string());
+        }
+        std::process::exit(1);
+    }
+}
 
 
 #[derive(PartialEq,Clone,Copy)]

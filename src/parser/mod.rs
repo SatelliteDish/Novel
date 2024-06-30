@@ -2,29 +2,31 @@ mod tokenizer;
 use tokenizer::{LiteralValue, Token, TokenType, Tokenizer};
 
 mod error_handler;
-use error_handler::{Error, ErrorType};
+use error_handler::{Error, ErrorType, ErrorHandler};
 
 mod tree_node;
 use tree_node::TreeNode;
 
 pub struct Parser<'a> {
     tokenizer: Tokenizer<'a>,
+    error_handler: ErrorHandler
 }
 
 impl<'a> Parser<'a> {
     pub fn new(text: &'a str) -> Self {
         Parser {
             tokenizer: Tokenizer::new(text),
+            error_handler: ErrorHandler::new()
         }
     }
 
-    pub unsafe fn parse(&'a mut self) -> String {
+    pub fn parse(&'a mut self) -> String {
         let result_tree = &self.parse_e();
         if let Ok(val) =  result_tree.eval() {
             print!("Result = {}\n", val);
         }
-        if error_handler::has_errors() {
-            error_handler::throw_errors();
+        if self.error_handler.has_errors() {
+            &self.error_handler.throw_errors();
         }
         result_tree.to_string()
     }
@@ -32,7 +34,7 @@ impl<'a> Parser<'a> {
     Parse Factor:
     F -> ID | f64 | -F
 */
-    unsafe fn parse_f(&mut self) -> TreeNode<'a> {
+    fn parse_f(&mut self) -> TreeNode<'a> {
         let node = match &self.tokenizer.peek() {
             Ok(_) => {
                 let tkn = &self.tokenizer.scan().unwrap().clone();
@@ -108,7 +110,7 @@ impl<'a> Parser<'a> {
                         TreeNode::new_eof(tkn.val, *tkn)
                     },
                     _ => {
-                        error_handler::report(
+                        &self.error_handler.report(
                             Error::new(
                                 ErrorType::UnexpectedToken,
                                 tkn.line(),
@@ -119,7 +121,7 @@ impl<'a> Parser<'a> {
                 }
             },
             Err(e) => {
-                error_handler::report(
+                &self.error_handler.report(
                     Error::new(
                         ErrorType::UnexpectedToken,
                         e.line,
@@ -139,7 +141,7 @@ impl<'a> Parser<'a> {
         Parse Expression:
         E = T {+|-T}
     */
-    unsafe fn parse_e(&mut self) -> TreeNode<'a> {
+    fn parse_e(&mut self) -> TreeNode<'a> {
         let mut e = self.parse_f();
         while self.is_more_tokens() {
             let token = self.tokenizer.scan();
@@ -187,7 +189,7 @@ impl<'a> Parser<'a> {
                     }
                 },
                 Err(e) => {
-                    error_handler::report(Error {
+                    &self.error_handler.report(Error {
                         error_type: e.error_type.clone(),
                         line: e.line,
                         position: e.position
@@ -198,7 +200,7 @@ impl<'a> Parser<'a> {
         }
         e
     }
-    pub unsafe fn is_more_tokens(&mut self) -> bool {
+    pub fn is_more_tokens(&mut self) -> bool {
             match &self.tokenizer.peek() {
                 Ok(tkn) => {
                     match tkn.token_type {
@@ -211,7 +213,7 @@ impl<'a> Parser<'a> {
                     }
                 },
                 Err(e) => {
-                    error_handler::report(Error {
+                    &self.error_handler.report(Error {
                         error_type: e.error_type.clone(),
                         line: e.line,
                         position: e.position 

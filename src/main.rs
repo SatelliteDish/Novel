@@ -18,12 +18,9 @@ fn main() {
             std::process::exit(1);
         }
     };
-    let mut parser: Parser = Parser::new(&text);
-    
-    unsafe {
-        let tree = &parser.parse();
-        println!("{}\n",tree);
-    }
+    let mut parser: Parser = Parser::new(&text);    
+    let tree = &parser.parse();
+    println!("{}\n",tree);
 }
 
 fn get_file(path: &str) -> Result<String,String> { 
