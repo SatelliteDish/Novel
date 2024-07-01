@@ -8,7 +8,6 @@ pub use literal_value::LiteralValue;
 
 use super::error_handler::{Error,ErrorType};
 
-#[derive(PartialEq)]
 
 pub struct Tokenizer<'a> {
     text: &'a str,

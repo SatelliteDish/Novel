@@ -1,6 +1,29 @@
 use super::{error_handler::{Error, ErrorType}, tokenizer::{Token,TokenType}};
 use super::LiteralValue;
 
+macro_rules! unary_node_constructor {
+    ($type: tt, $name: ident) => {
+        pub fn $name(val: LiteralValue<'a>, token: Token<'a>) -> Self {
+            TreeNode::$type {
+                val,
+                token
+            }
+        }
+    }
+}
+
+macro_rules! binary_node_constructor {
+    ($type: tt, $name: ident) => {
+        pub fn $name(left: Self, right: Self, token: Token<'a>) -> Self {
+            TreeNode::$type {
+                left:Box::new(left),
+                right: Box::new(right),
+                token
+            }
+        }
+    }
+}
+
 pub enum TreeNode<'a> {
     NumericLiteral{val: LiteralValue<'a>,token: Token<'a>},
     StringLiteral{val: LiteralValue<'a>,token: Token<'a>},
@@ -51,9 +74,129 @@ pub enum TreeNode<'a> {
     EOF{val: LiteralValue<'a>,token: Token<'a>},
     Empty{val: LiteralValue<'a>,token: Token<'a>},
 }
+
 impl std::fmt::Display for TreeNode<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,"{}",self.to_string())
+        write!(f,"{}",match &self {
+            TreeNode::NumericLiteral{val,..} |
+            TreeNode::StringLiteral{val,..} |
+            TreeNode::Identifier{val,..} |
+
+            TreeNode::Comma{val,..} |
+            TreeNode::Dot{val,..} |
+            TreeNode::Bang{val,..} |
+            TreeNode::Question{val,..} |
+            TreeNode::Interrobang{val,..} |
+        
+            TreeNode::Semicolon{val,..} |
+            TreeNode::Colon{val,..} => val.to_string(),
+        
+            TreeNode::Parens{val,..} => {
+                format!("
+                    \"{}\": {{
+                        {}
+                    }}
+                ",self.get_type(),val)
+            },
+        
+            TreeNode::Addition{left,right,..} |
+            TreeNode::Subtraction{left,right,..} |
+            TreeNode::Multiplication{left,right,..} |
+            TreeNode::Division{left,right,..} |
+            TreeNode::Modulo{left,right,..} => {
+                format!("
+                    \"{}\": {{
+                        \"left\": {{
+                            {}
+                        }},
+                        \"right\": {{
+                            {}
+                        }}
+                    }}
+                ",self.get_type(),left,right)
+            }
+            
+            
+            TreeNode::Negation{arg,..} => {
+                format!("
+                    \"-\" : {{
+                        \"arg\": {{
+                            {}
+                        }} 
+                    }}
+                ",arg
+                )
+            },
+            TreeNode::Keyword{val,..} => val.to_string(),
+
+            TreeNode::Ellipsis{val,..} => val.to_string(),
+
+            TreeNode::If{condition,expression,..} |
+            TreeNode::Therefore{condition,expression,..} => {
+                format!("
+                    \"{}\": {{
+                        \"condition\": {{
+                            {}
+                        }},
+                        \"expression\": {{
+                            {}
+                        }}
+                    }}
+                ",self.get_type(),condition,expression)
+            }
+        
+            TreeNode::EqTo{left,right,..} |
+            TreeNode::NeqTo{left,right,..} |
+            TreeNode::Or{left,right,..} |
+            TreeNode::Not{left,right,..} |
+            TreeNode::And{left,right,..} |
+            TreeNode::Less{left,right,..} |
+            TreeNode::Greater{left,right,..} |
+            TreeNode::LessEq{left,right,..} |
+            TreeNode::GreaterEq{left,right,..} => {
+                format!("
+                    \"{}\": {{
+                        \"left\": {{
+                            {}
+                        }},
+                        \"right\": {{
+                            {}
+                        }}
+                    }}
+                ",self.get_type(),left,right)
+            }
+
+            TreeNode::BooleanLiteral{val,..} => {
+                format!("
+                    \"{}\": {{
+                        {}
+                    }}
+                ",self.get_type(),val)
+            },
+            TreeNode::None{..} => "None".to_string(),
+            TreeNode::You{..} => "You".to_string(),
+            TreeNode::Assignment{identifier,val,..}  => {
+                format!("
+                    \"{}\": {{
+                        \"{}\": {{
+                            {}
+                        }}
+                    }}
+                ",self.get_type(),identifier,val)
+            },
+            TreeNode::Declaration{identifier,val,..} => {
+                format!("
+                    \"{}\": {{
+                        \"{}\": {{
+                            {}
+                        }}
+                    }}
+                ",self.get_type(),identifier,val)
+            },
+
+            TreeNode::EOF{..} => "EOF".to_string(),
+            TreeNode::Empty{..} => "null".to_string(),
+        })
     }
 }
 
@@ -66,131 +209,6 @@ impl<'a> TreeNode<'a> {
             _ => {
                 TreeNode::Empty{val,token: tkn}
             }
-        }
-    }
-
-    pub fn new_addition(left: Self, right: Self, token: Token<'a>) -> Self {
-        TreeNode::Addition {
-            left:Box::new(left),
-            right: Box::new(right),
-            token
-        }
-    }
-
-
-    pub fn new_subtraction(left: Self, right: Self, token: Token<'a>) -> Self {
-        TreeNode::Subtraction{
-            left: Box::new(left),
-            right: Box::new(right),
-            token
-        }
-    }
-
-    pub fn new_multiplication(left: Self, right: Self, token: Token<'a>) -> Self {
-        TreeNode::Multiplication{
-            left: Box::new(left),
-            right: Box::new(right),
-            token
-        }
-    }
-
-    pub fn new_division(left: Self, right: Self, token: Token<'a>) -> Self {
-        TreeNode::Division {
-            left: Box::new(left),
-            right: Box::new(right),
-            token
-        }
-    }
-
-    pub fn new_modulus(left: Self, right: Self, token: Token<'a>) -> Self {
-        TreeNode::Modulo {
-            left: Box::new(left),
-            right: Box::new(right),
-            token
-        }
-    }
-
-    pub fn new_number(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::NumericLiteral {
-            val,
-            token
-        }
-    }
-
-    pub fn new_string(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::StringLiteral {
-            val,
-            token
-        }
-    }
-
-    pub fn new_identifier(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::Identifier {
-            val,
-            token
-        }
-    }
-
-    pub fn new_keyword(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::Keyword {
-            val,
-            token
-        }
-    }
-
-    pub fn new_empty(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::Empty {
-            val,
-            token
-        }
-    }
-
-    pub fn new_comma(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::Comma {
-            val,
-            token
-        }
-    }
-
-    pub fn new_dot(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::Dot {
-            val,
-            token
-        }
-    }
-
-    pub fn new_bang(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::Bang {
-            val,
-            token
-        }
-    }
-
-    pub fn new_question(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::Question {
-            val,
-            token
-        }
-    }
-
-    pub fn new_interrobang(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::Interrobang {
-            val,
-            token
-        }
-    }
-
-    pub fn new_semicolon(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::Semicolon {
-            val,
-            token
-        }
-    }
-
-    pub fn new_colon(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::Colon {
-            val,
-            token
         }
     }
 
@@ -209,42 +227,27 @@ impl<'a> TreeNode<'a> {
         }
     }
 
-    pub fn new_bool(val: LiteralValue<'a>, token: Token<'a>) -> Result<TreeNode<'a>,Error> {
-        if let LiteralValue::Boolean(_) = val {
-            Ok(TreeNode::BooleanLiteral {
-                val,
-                token
-            })
-        } else {
-            Err(Error::new(
-                ErrorType::InvalidTokenValue,
-                token.line(),
-                token.start()
-            ))
-        }
-    }
-
-    pub fn new_none(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::None {
-            val,
-            token
-        }
-    }
-
-    pub fn new_eof(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::EOF {
-            val,
-            token
-        }
-    }
-
-    pub fn new_you(val: LiteralValue<'a>, token: Token<'a>) -> TreeNode<'a> {
-        TreeNode::You {
-            val,
-            token
-        }
-    }
-
+    binary_node_constructor!(Addition, new_addition);
+    binary_node_constructor!(Subtraction, new_subtraction);
+    binary_node_constructor!(Multiplication, new_multiplication);
+    binary_node_constructor!(Division, new_division);
+    binary_node_constructor!(Modulo, new_modulus);
+    unary_node_constructor!(NumericLiteral, new_number);
+    unary_node_constructor!(StringLiteral, new_string);
+    unary_node_constructor!(Identifier, new_identifier);
+    unary_node_constructor!(Keyword, new_keyword);
+    unary_node_constructor!(Empty, new_empty);
+    unary_node_constructor!(Comma, new_comma);
+    unary_node_constructor!(Dot, new_dot);
+    unary_node_constructor!(Bang, new_bang);
+    unary_node_constructor!(Question, new_question); 
+    unary_node_constructor!(Interrobang, new_interrobang);
+    unary_node_constructor!(Semicolon, new_semicolon);
+    unary_node_constructor!(Colon, new_colon);
+    unary_node_constructor!(BooleanLiteral, new_bool);
+    unary_node_constructor!(None, new_none);
+    unary_node_constructor!(EOF, new_eof);
+    unary_node_constructor!(You, new_you);
 
     pub fn get_type(&self) -> String {
         match &self {
@@ -287,128 +290,7 @@ impl<'a> TreeNode<'a> {
             TreeNode::Empty{..} => "null".to_string(),
         }
     }
-    pub fn to_string(&self) -> String {
-        match &self {
-            TreeNode::NumericLiteral{val,..} |
-            TreeNode::StringLiteral{val,..} |
-            TreeNode::Identifier{val,..} |
 
-            TreeNode::Comma{val,..} |
-            TreeNode::Dot{val,..} |
-            TreeNode::Bang{val,..} |
-            TreeNode::Question{val,..} |
-            TreeNode::Interrobang{val,..} |
-        
-            TreeNode::Semicolon{val,..} |
-            TreeNode::Colon{val,..} => val.to_string(),
-        
-            TreeNode::Parens{val,..} => {
-                format!("
-                    \"{}\": {{
-                        {}
-                    }}
-                ",self.get_type(),val.to_string())
-            },
-        
-            TreeNode::Addition{left,right,..} |
-            TreeNode::Subtraction{left,right,..} |
-            TreeNode::Multiplication{left,right,..} |
-            TreeNode::Division{left,right,..} |
-            TreeNode::Modulo{left,right,..} => {
-                format!("
-                    \"{}\": {{
-                        \"left\": {{
-                            {}
-                        }},
-                        \"right\": {{
-                            {}
-                        }}
-                    }}
-                ",self.get_type(),left,right)
-            }
-            
-            
-            TreeNode::Negation{arg,..} => {
-                format!("
-                    \"-\" : {{
-                        \"arg\": {{
-                            {}
-                        }} 
-                    }}
-                ",arg.to_string()
-                )
-            },
-            TreeNode::Keyword{..} => self.to_string(),
-
-            TreeNode::Ellipsis{..} => self.to_string(),
-
-            TreeNode::If{condition,expression,..} |
-            TreeNode::Therefore{condition,expression,..} => {
-                format!("
-                    \"{}\": {{
-                        \"condition\": {{
-                            {}
-                        }},
-                        \"expression\": {{
-                            {}
-                        }}
-                    }}
-                ",self.get_type(),condition.to_string(),expression.to_string())
-            }
-        
-            TreeNode::EqTo{left,right,..} |
-            TreeNode::NeqTo{left,right,..} |
-            TreeNode::Or{left,right,..} |
-            TreeNode::Not{left,right,..} |
-            TreeNode::And{left,right,..} |
-            TreeNode::Less{left,right,..} |
-            TreeNode::Greater{left,right,..} |
-            TreeNode::LessEq{left,right,..} |
-            TreeNode::GreaterEq{left,right,..} => {
-                format!("
-                    \"{}\": {{
-                        \"left\": {{
-                            {}
-                        }},
-                        \"right\": {{
-                            {}
-                        }}
-                    }}
-                ",self.get_type(),left.to_string(),right.to_string())
-            }
-
-            TreeNode::BooleanLiteral{val,..} => {
-                format!("
-                    \"{}\": {{
-                        {}
-                    }}
-                ",self.get_type(),val.to_string())
-            },
-            TreeNode::None{..} => "None".to_string(),
-            TreeNode::You{..} => "You".to_string(),
-            TreeNode::Assignment{identifier,val,..}  => {
-                format!("
-                    \"{}\": {{
-                        \"{}\": {{
-                            {}
-                        }}
-                    }}
-                ",self.get_type(),identifier.to_string(),val.to_string())
-            },
-            TreeNode::Declaration{identifier,val,..} => {
-                format!("
-                    \"{}\": {{
-                        \"{}\": {{
-                            {}
-                        }}
-                    }}
-                ",self.get_type(),identifier.to_string(),val.to_string())
-            },
-
-            TreeNode::EOF{..} => "EOF".to_string(),
-            TreeNode::Empty{..} => "null".to_string(),
-        }
-    }
     pub fn eval(&self) -> Result<LiteralValue,Error> {
         match &self {   
             TreeNode::Addition{left,right,token} => {
@@ -456,13 +338,13 @@ impl<'a> TreeNode<'a> {
                     Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
                 }
             },
-            TreeNode::NumericLiteral{val,..} => Ok(val.clone()),
+            TreeNode::NumericLiteral{val,..} => Ok(*val),
             TreeNode::Empty{..} => Ok(LiteralValue::none()),
             _ => Err(Error::new(ErrorType::NotImplemented, 0, 0))
 
         }
-
     }
+
 }
 
 mod tests {
@@ -470,7 +352,7 @@ mod tests {
     use rand::prelude::*;
 
     fn get_test_token() -> Token<'static> {
-        Token::new(TokenType::NumericLiteral, LiteralValue::new_number(0.0), &"0", 0, 0)
+        Token::new(TokenType::NumericLiteral, LiteralValue::new_number(0.0), "0", 0, 0)
     }
 
     #[test]

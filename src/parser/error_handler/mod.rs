@@ -14,7 +14,7 @@ impl ErrorHandler {
     }
     
     pub fn has_errors(&mut self) -> bool {
-        self.errors.len() > 0
+        !self.errors.is_empty()
     }
 
     pub fn throw_errors(&mut self) {
@@ -42,11 +42,14 @@ impl Error {
             position
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        format!("{}[{}:{}]",self.error_type
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,"{}[{}:{}]",self.error_type
         .get_type(),self.line,self.position)
     }
+
 }
 
 impl std::fmt::Debug for Error {

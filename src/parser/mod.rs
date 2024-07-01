@@ -89,7 +89,7 @@ impl<'a> Parser<'a> {
                     },
                     TokenType::False |
                     TokenType::True => {
-                        TreeNode::new_bool(tkn.val, *tkn).unwrap()
+                        TreeNode::new_bool(tkn.val, *tkn)
                     },
                     TokenType::None => {
                         TreeNode::new_none(tkn.val, *tkn)
