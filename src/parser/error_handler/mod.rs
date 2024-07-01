@@ -58,7 +58,7 @@ impl std::fmt::Debug for Error {
     }
 }
 
-#[allow(dead_code)]
+    #[allow(dead_code)]
 #[derive(Clone,Copy,PartialEq)]
 pub enum ErrorType {
     DivideByZero,
