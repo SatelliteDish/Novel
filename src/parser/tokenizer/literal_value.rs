@@ -3,10 +3,10 @@ pub enum LiteralValue<'a> {
     Number(f64),
     String(&'a str),
     Boolean(bool),
-    Identifer(&'a str),
+    Identifier(&'a str),
     Keyword(&'a str),
     Symbol(&'a str),
-    EOF,
+    Eof,
     None
 }
 
@@ -20,12 +20,13 @@ impl<'a> LiteralValue<'a> {
         LiteralValue::String(str)
     }
 
+    #[allow(dead_code)]
     pub fn new_bool(bool: &bool) -> Self {
         LiteralValue::Boolean(*bool)
     }
 
     pub fn new_identifier(id: &'a str) -> Self {
-        LiteralValue::Identifer(id)
+        LiteralValue::Identifier(id)
     }
     
     pub fn new_keyword(key: &'a str) -> Self {
@@ -37,7 +38,7 @@ impl<'a> LiteralValue<'a> {
     }
 
     pub fn eof() -> Self {
-        LiteralValue::EOF
+        LiteralValue::Eof
     }
 
     pub fn none() -> Self {
@@ -52,10 +53,10 @@ impl std::fmt::Display for LiteralValue<'_> {
             LiteralValue::Number(num) => format!("Number({})",num),
             LiteralValue::String(str) => format!("String({})",str),
             LiteralValue::Boolean(bool) => format!("Bool({})",bool),
-            LiteralValue::Identifer(id) => format!("Identifier({})",id),
+            LiteralValue::Identifier(id) => format!("Identifier({})",id),
             LiteralValue::Keyword(key) => format!("KeyWord({})",key),
             LiteralValue::Symbol(sym) => format!("Symbol({})",sym),
-            LiteralValue::EOF => "EOF".to_string(),
+            LiteralValue::Eof => "EOF".to_string(),
             LiteralValue::None => "None".to_string()
             }
         )

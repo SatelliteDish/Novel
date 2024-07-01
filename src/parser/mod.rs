@@ -23,10 +23,10 @@ impl<'a> Parser<'a> {
     pub fn parse(&'a mut self) -> String {
         let result_tree = &self.parse_e();
         if let Ok(val) =  result_tree.eval() {
-            print!("Result = {}\n", val);
+            println!("Result = {}\n", val);
         }
         if self.error_handler.has_errors() {
-            &self.error_handler.throw_errors();
+            let _ = &self.error_handler.throw_errors();
         }
         result_tree.to_string()
     }
@@ -106,11 +106,11 @@ impl<'a> Parser<'a> {
                     TokenType::IdKeyword => {
                         todo!()
                     },
-                    TokenType::EOF => {
+                    TokenType::Eof => {
                         TreeNode::new_eof(tkn.val, *tkn)
                     },
                     _ => {
-                        &self.error_handler.report(
+                        let _ = &self.error_handler.report(
                             Error::new(
                                 ErrorType::UnexpectedToken,
                                 tkn.line(),
@@ -121,7 +121,7 @@ impl<'a> Parser<'a> {
                 }
             },
             Err(e) => {
-                &self.error_handler.report(
+                let _ = &self.error_handler.report(
                     Error::new(
                         ErrorType::UnexpectedToken,
                         e.line,
@@ -134,7 +134,7 @@ impl<'a> Parser<'a> {
                     )
                 }
             };
-        print!("{}",node.to_string());
+        print!("{}",node);
         node
     }
     /*
@@ -189,8 +189,8 @@ impl<'a> Parser<'a> {
                     }
                 },
                 Err(e) => {
-                    &self.error_handler.report(Error {
-                        error_type: e.error_type.clone(),
+                    let _ = &self.error_handler.report(Error {
+                        error_type: e.error_type,
                         line: e.line,
                         position: e.position
                     });
@@ -202,19 +202,10 @@ impl<'a> Parser<'a> {
     }
     pub fn is_more_tokens(&mut self) -> bool {
             match &self.tokenizer.peek() {
-                Ok(tkn) => {
-                    match tkn.token_type {
-                        TokenType::Plus |
-                        TokenType::Minus |
-                        TokenType::Star |
-                        TokenType::Slash |
-                        TokenType::Mod => true,
-                        _ => false
-                    }
-                },
+                Ok(tkn) => !matches!(tkn.token_type, TokenType::Eof),
                 Err(e) => {
-                    &self.error_handler.report(Error {
-                        error_type: e.error_type.clone(),
+                    let _ = &self.error_handler.report(Error {
+                        error_type: e.error_type,
                         line: e.line,
                         position: e.position 
                     });

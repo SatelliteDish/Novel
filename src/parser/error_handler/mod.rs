@@ -19,7 +19,7 @@ impl ErrorHandler {
 
     pub fn throw_errors(&mut self) {
         for err in &self.errors {
-            eprintln!("\n{}",err.to_string());
+            eprintln!("\n{}",err);
         }
         std::process::exit(1);
     }
@@ -58,6 +58,7 @@ impl std::fmt::Debug for Error {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone,Copy,PartialEq)]
 pub enum ErrorType {
     DivideByZero,

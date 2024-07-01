@@ -1,6 +1,102 @@
 use core::fmt;
 use super::{LiteralValue,Error,ErrorType};
 
+
+macro_rules! token_constructor {
+    ($type: tt, $lit_type: tt, $name: ident) => {
+        pub fn $name(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
+            if let LiteralValue::$lit_type(_) = &val {
+                Ok(Token {
+                    token_type: TokenType::$type,
+                    val,
+                    raw,
+                    line,
+                    start
+                })
+            } else {
+                Err( Error::new( ErrorType::InvalidTokenValue, line, start ))
+            }
+        }
+    }
+}
+
+macro_rules! symbol_token_constructor {
+    ($type: tt, $sym: expr, $name: ident) => {
+        pub fn $name(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
+            if let LiteralValue::Symbol(sym) = &val {
+                if *sym != $sym {
+                    return Err(Error::new(
+                        ErrorType::InvalidTokenValue,
+                        line,
+                        start
+                    ))
+                }
+                Ok(Token {
+                    token_type: TokenType::$type,
+                    val,
+                    raw,
+                    line,
+                    start
+                })
+            } else {
+                Err(Error::new(ErrorType::InvalidTokenValue, line, start))
+            }
+        }
+        
+    }
+}
+
+macro_rules! dbl_keyword_token_constructor {
+    ($type: tt, $sym1: expr, $sym2: expr, $name: ident) => {
+        pub fn $name(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
+            if let LiteralValue::Keyword(key) = &val {
+                if *key != $sym1 || *key != $sym2 {
+                    return Err(Error::new(
+                        ErrorType::InvalidTokenValue,
+                        line,
+                        start
+                    ))
+                }
+                Ok(Token {
+                    token_type: TokenType::$type,
+                    val,
+                    raw,
+                    line,
+                    start
+                })
+            } else {
+                Err(Error::new(ErrorType::InvalidTokenValue, line, start))
+            }
+        }
+    }
+}
+
+macro_rules! sng_keyword_token_constructor {
+    ($type: tt, $sym: expr, $name: ident) => {
+        pub fn $name(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
+            if let LiteralValue::Keyword(key) = &val {
+                if *key != $sym {
+                    return Err(Error::new(
+                        ErrorType::InvalidTokenValue,
+                        line,
+                        start
+                    ))
+                }
+                Ok(Token {
+                    token_type: TokenType::$type,
+                    val,
+                    raw,
+                    line,
+                    start
+                })
+            } else {
+                Err(Error::new(ErrorType::InvalidTokenValue, line, start))
+            }
+        }
+    }
+}
+
+#[allow(dead_code)]
 #[derive(PartialEq,Eq,Clone,Hash,Copy)]
 pub enum TokenType {
     //Literals
@@ -28,13 +124,12 @@ pub enum TokenType {
     False, True, None, You,
     Assignment, Declaration, IdKeyword,
 
-    Whitespace, EOF, Invalid, Empty
+    Whitespace, Eof, Invalid, Empty
 }
 
-impl TokenType {
-
-    pub fn to_string(&self) -> String {
-        match self {
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f,"{}",match self {
             TokenType::NumericLiteral => "NumericLiteral".to_string(),
             TokenType::StringLiteral => "StringLiteral".to_string(),
             TokenType::Identifier => "Identifier".to_string(),
@@ -71,17 +166,11 @@ impl TokenType {
             TokenType::IdKeyword => "Id Keyword".to_string(),
             TokenType::Declaration => "Declaration".to_string(),
             TokenType::Assignment => "Assignment".to_string(),
-            TokenType::EOF => "EOF".to_string(),
+            TokenType::Eof => "EOF".to_string(),
             TokenType::Empty => "Empty".to_string(),
             TokenType::Whitespace => "Whitespace".to_string(),
             TokenType::Invalid => "Error".to_string(),
-        }
-    }
-}
-
-impl std::fmt::Display for TokenType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f,"{}", &self.to_string())
+        })
     }
 }
 
@@ -94,20 +183,9 @@ pub struct Token<'a> {
     start: usize
 }
 
-impl<'a> Token<'a> {
-
-    pub fn new(tkn_type: TokenType, val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Token<'a> {
-        Token {
-            token_type: tkn_type,
-            val,
-            raw,
-            line,
-            start
-        }
-    }
-
-    pub fn to_string(&self) -> String {
-        format!("
+impl fmt::Display for Token<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f,"
             \"{}\": {{
                 \"val\": {},
                 \"raw\": {},
@@ -116,6 +194,10 @@ impl<'a> Token<'a> {
             }}
         ", &self.token_type, &self.val, &self.raw, self.line, self.start)
     }
+}
+
+#[allow(dead_code)]
+impl<'a> Token<'a> {
 
     pub fn len(&self) -> usize {
         self.raw.len()
@@ -133,20 +215,6 @@ impl<'a> Token<'a> {
         self.start
     }
 
-    //========================================
-    //TODO: Make a macro for these constructors
-    //=========================================
-    
-    pub fn empty() -> Self {
-        Token {
-            token_type: TokenType::Empty,
-            val: LiteralValue::none(),
-            raw: "",
-            line: 0,
-            start: 0
-        }
-    }
-
     pub fn new_whitespace(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Token<'a> {
         Token {
             token_type: TokenType::Whitespace,
@@ -158,9 +226,9 @@ impl<'a> Token<'a> {
     }
 
     pub fn new_eof(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::EOF = &val {
+        if let LiteralValue::Eof = &val {
             Ok(Token {
-                token_type: TokenType::EOF,
+                token_type: TokenType::Eof,
                 val,
                 raw,
                 line,
@@ -178,118 +246,6 @@ impl<'a> Token<'a> {
             raw: "\0",
             line: 0,
             start: 0
-        }
-    }
-
-    pub fn new_identifier(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Identifer(_) = val {
-            Ok(Token {
-                token_type: TokenType::Identifier,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-
-    pub fn new_string(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::String(_) = val {
-            Ok(Token {
-                token_type: TokenType::StringLiteral,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_comma(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "," {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Comma,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_dot(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "." {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Dot,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-
-    pub fn new_bang(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "!" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Bang,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-
-    pub fn new_question(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "?" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Question,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
         }
     }
     
@@ -313,532 +269,7 @@ impl<'a> Token<'a> {
             Err(Error::new(ErrorType::InvalidTokenValue, line, start))
         }
     }
-    
-    pub fn new_semicolon(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != ";" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Semicolon,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_colon(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != ":" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Colon,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_left_paren(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "(" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::LeftParen,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_right_paren(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != ")" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::RightParen,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_plus(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "+" {
-                return Err(Error::new(
-                        ErrorType::InvalidTokenValue,
-                        line,
-                        start
-                    ))
-                }
-            Ok(Token {
-                token_type: TokenType::Plus,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_minus(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "-" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Minus,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_star(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "*" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Star,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_slash(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "/" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Slash,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_mod(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "%" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Mod,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_ellipsis(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "..." {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Ellipsis,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_if(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "If" || *key != "if" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::If,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_eq_to(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "is equal to" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::EqTo,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_neq_to(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "is not equal to" || *key != "isn't equal to" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::NeqTo,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_or(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "or" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Or,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_not(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "is not" || *key != "isn't" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Not,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_and(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "and" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::And,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_less_eq(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "is less than or equal to" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::LessEq,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_less(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "is less than" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Less,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_greater_eq(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "is greater than or equal to" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::GreaterEq,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_greater(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "is greater than" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Greater,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_therefore(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "; Therefore" || *key != "; therefore" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Therefore,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_false(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "false" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::False,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_true(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "true" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::True,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_none (val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "none" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::None,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
-    pub fn new_you(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "You" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::You,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
+
     pub fn new_assignment(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
             if *key != "it is" ||
@@ -862,28 +293,7 @@ impl<'a> Token<'a> {
             Err(Error::new(ErrorType::InvalidTokenValue, line, start))
         }
     }
-    
-    pub fn new_declaration(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "; Therefore" || *key != "; therefore" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Therefore,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-    
+
     pub fn new_id_keyword(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
         if let LiteralValue::Keyword(key) = &val {
             if *key != "called" ||
@@ -907,25 +317,40 @@ impl<'a> Token<'a> {
         }
     }
 
-    pub fn new_number(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Number(_) = val {
-            Ok(Token {
-                token_type: TokenType::NumericLiteral,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-}
+    token_constructor!(Identifier, Identifier, new_identifier);
+    token_constructor!(StringLiteral, String, new_string); 
+    token_constructor!(NumericLiteral, Number, new_number);
+    symbol_token_constructor!(Comma, ",", new_comma);
+    symbol_token_constructor!(Dot, ".", new_dot);
+    symbol_token_constructor!(Bang, "!", new_bang);
+    symbol_token_constructor!(Question, "?", new_question);
+    symbol_token_constructor!(Semicolon, ";", new_semicolon); 
+    symbol_token_constructor!(Colon, ":", new_colon); 
+    symbol_token_constructor!(LeftParen, "(",new_left_paren);
+    symbol_token_constructor!(RightParen, ")", new_right_paren); 
+    symbol_token_constructor!(Plus, "+", new_plus);
+    symbol_token_constructor!(Minus, "-", new_minus);
+    symbol_token_constructor!(Star,"*", new_star);
+    symbol_token_constructor!(Slash, "/", new_slash);
+    symbol_token_constructor!(Mod, "%", new_mod);
+    symbol_token_constructor!(Ellipsis, "...", new_ellipsis);
+    dbl_keyword_token_constructor!(If, "If", "if", new_if);
+    sng_keyword_token_constructor!(EqTo, "is equal to", new_eq_to); 
+    dbl_keyword_token_constructor!(NeqTo, "is not equal to", "isn't equal to", new_neq_to); 
+    sng_keyword_token_constructor!(Or, "or", new_or); 
+    dbl_keyword_token_constructor!(Not, "is not", "isn't", new_not); 
+    sng_keyword_token_constructor!(And, "and", new_and); 
+    sng_keyword_token_constructor!(LessEq, "is less than or equal to", new_less_eq); 
+    sng_keyword_token_constructor!(Less, "is less than", new_less);
+    sng_keyword_token_constructor!(GreaterEq, "is greater than or equal to", new_greater_eq);
+    sng_keyword_token_constructor!(Greater, "is greater than", new_greater);
+    dbl_keyword_token_constructor!(Therefore, "Therefore", "therefore", new_therefore);
+    sng_keyword_token_constructor!(False, "false", new_false);
+    sng_keyword_token_constructor!(True, "true", new_true);
+    sng_keyword_token_constructor!(None, "none", new_none);
+    sng_keyword_token_constructor!(You, "You", new_you); 
+    dbl_keyword_token_constructor!(Declaration, "; Therefore", "; therefore", new_declaration);
 
-impl std::fmt::Display for Token<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f,"{}",&self.to_string())
-    }
 }
 
 impl std::fmt::Debug for Token<'_> {
@@ -986,7 +411,7 @@ mod tests {
         assert_eq!(TokenType::IdKeyword.to_string(), "Id Keyword");
         assert_eq!(TokenType::Declaration.to_string(), "Declaration");
         assert_eq!(TokenType::Assignment.to_string(), "Assignment");
-        assert_eq!(TokenType::EOF.to_string(), "EOF");
+        assert_eq!(TokenType::Eof.to_string(), "EOF");
     }
 
 }

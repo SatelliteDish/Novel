@@ -8,7 +8,7 @@ pub use literal_value::LiteralValue;
 
 use super::error_handler::{Error,ErrorType};
 
-
+#[allow(dead_code)]
 pub struct Tokenizer<'a> {
     text: &'a str,
     current: usize,
@@ -19,7 +19,7 @@ pub struct Tokenizer<'a> {
 impl<'a> Tokenizer<'a> {
 
     pub fn new(text: &'a str) -> Tokenizer<'a> {
-        let tkn: Token<'a> = get_first_token(&text,0,0);
+        let tkn: Token<'a> = get_first_token(text,0,0);
         Tokenizer {
             text,
             current: tkn.len(),
@@ -81,7 +81,7 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
-fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
+fn get_first_token(text: &str, line: u32, pos: usize) -> Token {
     //match regex
     let mut result = Token::invalid();
     if let Some(cap) = Regex::new(
@@ -90,7 +90,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                   if                         * 
     \**********************************************/
         r"^[iI]f"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_if(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[cap.len()..],
@@ -103,7 +103,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *               therefore                      * 
     \**********************************************/
         r"^; [tT]herefore"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_therefore(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -116,7 +116,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                equal to                      * 
     \**********************************************/
         r"^is equal to"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_eq_to (
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -129,7 +129,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *              not equal to                    * 
     \**********************************************/
         r"^(is not|isn't) equal to"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_neq_to(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -142,7 +142,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                   or                         * 
     \**********************************************/
         r"^or"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_or(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -155,7 +155,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                   not                        * 
     \**********************************************/
         r"^(is not|isn't)"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_not(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -168,7 +168,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                   and                        * 
     \**********************************************/
         r"^and"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_and(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -181,7 +181,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *             less or equal to                 * 
     \**********************************************/
         r"^is less than or equal to"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_less_eq( 
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -194,7 +194,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                less than                     * 
     \**********************************************/
         r"^is less than"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_less(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -207,7 +207,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *            greater or equal                  * 
     \**********************************************/
         r"^is greater than or equal to"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_greater_eq(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -220,7 +220,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                 greater                      * 
     \**********************************************/
         r"^is greater than"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_greater(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -233,7 +233,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                 false                        * 
     \**********************************************/
         r"^false"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_false(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -246,7 +246,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                  true                        * 
     \**********************************************/
         r"^true"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_true(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -259,7 +259,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                  none                        * 
     \**********************************************/
         r"^none"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_none(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -272,7 +272,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                   you                        * 
     \**********************************************/
         r"^You"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_you(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -285,7 +285,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *               assignment                     * 
     \**********************************************/
         r"^((it|he|she) is | they are)"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_assignment(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -298,7 +298,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *               declaration                    * 
     \**********************************************/
         r"^[tT]here is a"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_declaration(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -311,7 +311,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                id keyword                    * 
     \**********************************************/
         r"^(called|named|labelled)"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_id_keyword(
             LiteralValue::new_keyword(&text[..cap.len()]),
             &text[..cap.len()],
@@ -324,7 +324,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                identifier                    * 
     \**********************************************/
         r"^[A-Z]\w+"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_identifier(
             LiteralValue::new_identifier(&text[..cap.len()]),
             &text[..cap.len()],
@@ -337,7 +337,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                  string                      * 
     \**********************************************/
         r#"^"[^"]*""#
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_string(
             LiteralValue::new_string(&text[..cap.len()]),
             &text[..cap.len()],
@@ -347,7 +347,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     
     } else if let Some(cap) = Regex::new(
         r#"^'[^']*'"#
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_string(
             LiteralValue::new_string(&text[..cap.len()]),
                 &text[..cap.len()],
@@ -360,9 +360,9 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                  number                      * 
     \**********************************************/
         r"^\d+(\.[\d]+)?"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_number(
-            LiteralValue::new_number(cap[0].to_string().parse::<f64>().expect("Non-number matched as numeric literal!!!")),
+            LiteralValue::new_number(cap.as_str().parse::<f64>().expect("Non-number matched as numeric literal!!!")),
             &text[..cap.len()],
             line,
             pos
@@ -373,7 +373,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                   comma                      * 
     \**********************************************/
         r"^,"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
             result = Token::new_comma(
                 LiteralValue::new_symbol(&text[..cap.len()]),
                 &text[..cap.len()],
@@ -386,7 +386,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                    dot                       * 
     \**********************************************/
         r"^\."
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_dot(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
@@ -399,7 +399,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                   bang                       * 
     \**********************************************/
         r"^!"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_bang(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
@@ -412,7 +412,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                 question                     * 
     \**********************************************/
         r"^\?"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_question(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
@@ -425,7 +425,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                 interrobang                  * 
     \**********************************************/
         r"^(‽|\?!|!\?)"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_interrobang(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
@@ -438,7 +438,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                semicolon                     * 
     \**********************************************/
         r"^;"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_semicolon(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
@@ -451,7 +451,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                    colon                     * 
     \**********************************************/
         r"^:"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_colon(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
@@ -464,7 +464,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                left paren                    * 
     \**********************************************/
         r"^\("
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_left_paren(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
@@ -477,7 +477,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                 right paren                  * 
     \**********************************************/
         r"^\)"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_right_paren(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
@@ -490,7 +490,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                    plus                      * 
     \**********************************************/
         r"^\+"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_plus(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
@@ -503,7 +503,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                   minus                      * 
     \**********************************************/
         r"^-"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_minus(
         LiteralValue::new_symbol(&text[..cap.len()]),
         &text[..cap.len()],
@@ -516,7 +516,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                    star                      * 
     \**********************************************/
         r"\*"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_star(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
@@ -529,7 +529,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                   slash                      * 
     \**********************************************/
         r"^/"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_slash(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
@@ -542,20 +542,20 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                 ellipsis                     * 
     \**********************************************/
         r"^\.\.\."
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_ellipsis(
             LiteralValue::new_symbol(&text[..cap.len()]),
             &text[..cap.len()],
             line,
             pos
         ).unwrap();
-    } else if let Some(cap) = Regex::new(
+    } else if Regex::new(
        
     /**********************************************\
     *                    eof                       * 
     \**********************************************/
         r"^\z"
-    ).unwrap().captures(text) {
+    ).unwrap().is_match(text) {
         result = Token::new_eof(
             LiteralValue::eof(),
             "\0",
@@ -568,7 +568,7 @@ fn get_first_token<'a>(text: &'a str, line: u32, pos: usize) -> Token<'a> {
     *                whitespace                    * 
     \**********************************************/
         r"^\s+"
-    ).unwrap().captures(text) {
+    ).unwrap().find(text) {
         result = Token::new_whitespace(
             LiteralValue::none(),
             &text[..cap.len()],

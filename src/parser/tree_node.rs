@@ -24,6 +24,7 @@ macro_rules! binary_node_constructor {
     }
 }
 
+#[allow(dead_code)]
 pub enum TreeNode<'a> {
     NumericLiteral{val: LiteralValue<'a>,token: Token<'a>},
     StringLiteral{val: LiteralValue<'a>,token: Token<'a>},
@@ -71,8 +72,8 @@ pub enum TreeNode<'a> {
     Assignment{identifier: LiteralValue<'a>, val: LiteralValue<'a>,token: Token<'a>},
     Declaration{identifier: LiteralValue<'a>, val: Box<TreeNode<'a>>,token: Token<'a>},
     
-    EOF{val: LiteralValue<'a>,token: Token<'a>},
-    Empty{val: LiteralValue<'a>,token: Token<'a>},
+    Eof{ val: LiteralValue<'a>, token: Token<'a> },
+    Empty{ val: LiteralValue<'a>, token: Token<'a> },
 }
 
 impl std::fmt::Display for TreeNode<'_> {
@@ -194,12 +195,13 @@ impl std::fmt::Display for TreeNode<'_> {
                 ",self.get_type(),identifier,val)
             },
 
-            TreeNode::EOF{..} => "EOF".to_string(),
+            TreeNode::Eof{..} => "EOF".to_string(),
             TreeNode::Empty{..} => "null".to_string(),
         })
     }
 }
 
+#[allow(dead_code)]
 impl<'a> TreeNode<'a> {
     pub fn from_token(tkn: Token<'a>) -> Self {
         let val = tkn.val;
@@ -246,7 +248,7 @@ impl<'a> TreeNode<'a> {
     unary_node_constructor!(Colon, new_colon);
     unary_node_constructor!(BooleanLiteral, new_bool);
     unary_node_constructor!(None, new_none);
-    unary_node_constructor!(EOF, new_eof);
+    unary_node_constructor!(Eof, new_eof);
     unary_node_constructor!(You, new_you);
 
     pub fn get_type(&self) -> String {
@@ -286,7 +288,7 @@ impl<'a> TreeNode<'a> {
             TreeNode::You{..} => "You".to_string(),
             TreeNode::Assignment{..} => "Assignment".to_string(),
             TreeNode::Declaration{..} => "Declaration".to_string(),
-            TreeNode::EOF{..} => "EOF".to_string(),
+            TreeNode::Eof{..} => "EOF".to_string(),
             TreeNode::Empty{..} => "null".to_string(),
         }
     }
@@ -348,11 +350,11 @@ impl<'a> TreeNode<'a> {
 }
 
 mod tests {
-    use super::{TreeNode,LiteralValue,Token,TokenType};
-    use rand::prelude::*;
+    use super::{TreeNode,LiteralValue,Token};
 
-    fn get_test_token() -> Token<'static> {
-        Token::new(TokenType::NumericLiteral, LiteralValue::new_number(0.0), "0", 0, 0)
+    #[allow(dead_code)]
+    fn get_test_number(num: f64) -> TreeNode<'static> {
+        TreeNode::new_number(LiteralValue::new_number(num),Token::invalid())
     }
 
     #[test]
@@ -360,9 +362,9 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let add = TreeNode::new_addition(
-                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
-                get_test_token()
+                get_test_number(i_f),
+                get_test_number(100.0-i_f),
+                Token::invalid()
             );
             if let TreeNode::Addition {left, right,..} = add {
                 let left_val = match left.as_ref() {
@@ -378,7 +380,7 @@ mod tests {
                     _ => {
                         assert_eq!(true,false,
                             "\nLeft branch of addition not a Numeric Literal, is {} instead.\n",
-                            left.as_ref().to_string());
+                            left.as_ref());
                         return
                     }
                 };
@@ -387,21 +389,21 @@ mod tests {
                     _ => {
                         assert_eq!(true,false,
                             "\nRight branch of addition not a Numeric Literal, is {} instead.\n",
-                            right.as_ref().to_string());
+                            right.as_ref());
                         return;
                     }
                 };
                 assert_eq!(*left_val,i_f,
                     "\nLeft side of addition should be {} but is {}!\n",
                     i_f,*left_val);
-                assert_eq!(*right_val,LiteralValue::new_number((100.0-i_f)),
+                assert_eq!(*right_val,LiteralValue::new_number(100.0-i_f),
                     "\nRight side of addition should be {} but is {}!\n",
                     i_f,*right_val);
                 continue;
             }
             assert_eq!(true,false,
             "\nCreated node is not of type addition, found {} instead!\n",
-            add.to_string())
+            add)
         }
     }
     #[test]
@@ -409,9 +411,9 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let add = TreeNode::new_addition(
-                TreeNode::new_number(LiteralValue::new_number (i_f), get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)), get_test_token()),
-                get_test_token()
+                get_test_number(i_f),
+                get_test_number(100.0 - i_f),
+                Token::invalid()
             );
             if let TreeNode::Addition { .. } = add {
                 match &add.eval() {
@@ -439,7 +441,7 @@ mod tests {
             }
             assert_eq!(true,false,
                 "\nCreated node was not a addition node, found {} instead!\n",
-                add.to_string());
+                add);
         }
     }
 
@@ -448,9 +450,9 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let sub = TreeNode::new_subtraction(
-                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
-                get_test_token()
+                get_test_number(i_f),
+                get_test_number(100.0 - i_f),
+                Token::invalid()
             );
             if let TreeNode::Subtraction { left, right ,..} = sub {
                 let left_val = match left.as_ref() {
@@ -458,7 +460,7 @@ mod tests {
                     _ => {
                         assert_eq!(true,false,
                             "\nLeft branch of subtraction not a Numeric Literal, is {} instead.\n",
-                            left.as_ref().to_string());
+                            left.as_ref());
                         return
                     }
                 };
@@ -467,19 +469,19 @@ mod tests {
                     _ => {
                         assert_eq!(true,false,
                             "\nRight branch of subtraction not a Numeric Literal, is {} instead.\n",
-                            right.as_ref().to_string());
+                            right.as_ref());
                         return;
                     }
                 };
                 assert_eq!(*left_val,LiteralValue::new_number(i_f),
                     "\nLeft side of subtraction should be {} but is {}!\n",i_f,*left_val);
-                assert_eq!(*right_val,LiteralValue::new_number((100.0-i_f)),
+                assert_eq!(*right_val,LiteralValue::new_number(100.0-i_f),
                     "\nRight side of subtraction should be {} but is {}!\n",i_f,*right_val);
                 continue;
             }
             assert_eq!(true,false,
             "\nCreated node was not a subtraction node, created {} instead!\n",
-            sub.to_string())
+            sub)
         }
     }
 
@@ -488,9 +490,9 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let sub = TreeNode::new_subtraction(
-                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
-                get_test_token()
+                get_test_number(i_f),
+                get_test_number(100.0 - i_f),
+                Token::invalid()
             );
             if let TreeNode::Subtraction { .. } = sub {
                 match &sub.eval() {
@@ -518,7 +520,7 @@ mod tests {
             }
             assert_eq!(true,false,
                 "\nCreated node was not a subtraction node, found {} instead!\n",
-                sub.to_string())
+                sub)
         }
     }
 
@@ -527,9 +529,9 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let mult = TreeNode::new_multiplication(
-                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
-                get_test_token()
+                get_test_number(i_f),
+                get_test_number(100.0 - i_f),
+                Token::invalid()
             );
             if let TreeNode::Multiplication { left, right,.. } = mult {
                 let left_val = match left.as_ref() {
@@ -537,7 +539,7 @@ mod tests {
                     _ => {
                         assert_eq!(true,false,
                             "\nLeft branch of multiplication not a Numeric Literal, is {} instead.\n",
-                            left.as_ref().to_string());
+                            left.as_ref());
                         return
                     }
                 };
@@ -546,19 +548,19 @@ mod tests {
                     _ => {
                         assert_eq!(true,false,
                             "\nRight branch of multiplication not a Numeric Literal, is {} instead.\n",
-                            right.as_ref().to_string());
+                            right.as_ref());
                         return;
                     }
                 };
                 assert_eq!(*left_val,LiteralValue::new_number(i_f),
                     "\nLeft side of multiplication should be {} but is {}!\n",i_f,*left_val);
-                assert_eq!(*right_val,LiteralValue::new_number((100.0-i_f)),
+                assert_eq!(*right_val,LiteralValue::new_number(100.0-i_f),
                     "\nRight side of multiplication should be {} but is {}!\n",i_f,*right_val);
                 continue;
             }
             assert_eq!(true,false,
             "\nCreated node was not a multiplication node, created {} instead!\n",
-            mult.to_string())
+            mult)
         }
     }
 
@@ -567,9 +569,9 @@ mod tests {
         for i in -100..100 {
             let i_f = i as f64;
             let mult = TreeNode::new_multiplication(
-                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
-                get_test_token()
+                get_test_number(i_f),
+                get_test_number(100.0 - i_f),
+                Token::invalid()
             );
             if let TreeNode::Multiplication { .. } = mult {
                 match &mult.eval() {
@@ -597,7 +599,7 @@ mod tests {
             }
             assert_eq!(true,false,
                 "\nCreated node was not a multiplication node, found {} instead!\n",
-                mult.to_string())
+                mult)
         }
     }
 
@@ -606,9 +608,9 @@ mod tests {
         for i in -100..99 {
             let i_f = i as f64;
             let div = TreeNode::new_division(
-                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number(100.0-i_f),get_test_token()),
-                get_test_token()
+                get_test_number(i_f),
+                get_test_number(100.0 - i_f),
+                Token::invalid()
             );
             if let TreeNode::Division { left, right,.. } = div {
                 let left_val = match left.as_ref() {
@@ -616,7 +618,7 @@ mod tests {
                     _ => {
                         assert_eq!(true,false,
                             "\nLeft branch of division not a Numeric Literal, is {} instead.\n",
-                            left.as_ref().to_string());
+                            left.as_ref());
                         return
                     }
                 };
@@ -625,7 +627,7 @@ mod tests {
                     _ => {
                         assert_eq!(true,false,
                             "\nRight branch of division not a Numeric Literal, is {} instead.\n",
-                            right.as_ref().to_string());
+                            right.as_ref());
                         return;
                     }
                 };
@@ -637,7 +639,7 @@ mod tests {
             }
             assert_eq!(true,false,
             "\nCreated node was not a division node, created {} instead!\n",
-            div.to_string())
+            div)
         }
     }
 
@@ -646,9 +648,9 @@ mod tests {
         for i in -100..99 {
             let i_f = i as f64;
             let div = TreeNode::new_division(
-                TreeNode::new_number(LiteralValue::new_number(i_f),get_test_token()),
-                TreeNode::new_number(LiteralValue::new_number((100.0-i_f)),get_test_token()),
-                get_test_token()
+                get_test_number(i_f),
+                get_test_number(100.0 - i_f),
+                Token::invalid()
             );
             if let TreeNode::Division { .. } = div {
                 match &div.eval() {
@@ -676,16 +678,16 @@ mod tests {
             }
             assert_eq!(true,false,
                 "\nCreated node was not a division node, found {} instead!\n",
-                div.to_string())
+                div)
         }
     }
 
     #[test]
     fn cant_divide_by_zero() {
         let div = TreeNode::new_division(
-          TreeNode::new_number( LiteralValue::new_number(10.0), get_test_token() ),
-          TreeNode::new_number( LiteralValue::new_number(0.0), get_test_token() ),
-          get_test_token()
+            get_test_number(10.0),
+            get_test_number(0.0),
+            Token::invalid()
         );
         match &div.eval() {
             Ok(val) => assert_eq!(true,false, "Allowed division by zero!\n Val: {}",val),
@@ -699,14 +701,14 @@ mod tests {
             let val1 = rand::random::<f64>() * 10.0  * i_f;
             let val2 = rand::random::<f64>() * 10.0  * i_f;
             let mult1 = TreeNode::new_multiplication(
-                TreeNode::new_number( LiteralValue::new_number(val1), get_test_token() ),
-                TreeNode::new_number( LiteralValue::new_number(val2), get_test_token() ),
-                get_test_token()
+                get_test_number(val1),
+                get_test_number(val2),
+                Token::invalid()
             );
             let mult2 = TreeNode::new_multiplication(
-                TreeNode::new_number( LiteralValue::new_number(val2), get_test_token() ),
-                TreeNode::new_number( LiteralValue::new_number(val1), get_test_token() ),
-                get_test_token()
+                get_test_number(val2),
+                get_test_number(val1),
+                Token::invalid()
             );
             if let (Ok(product1),Ok(product2)) = (mult1.eval(), mult2.eval()) {
                 assert_eq!(product1, product2,"Error, communitive property not correct on Multiplication.");
