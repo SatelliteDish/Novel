@@ -15,6 +15,7 @@ pub struct Tokenizer<'a> {
     line: u32,
     start: usize,
     token: Result<Token<'a>,Error>,
+    lines: Vec<u32>,
 }
 impl<'a> Tokenizer<'a> {
 
@@ -23,7 +24,7 @@ impl<'a> Tokenizer<'a> {
         Tokenizer {
             text,
             current: tkn.len(),
-            line: 0,
+            line: 1,
             start: 0,
             token: match tkn.token_type {
                 TokenType::Invalid => {
@@ -34,7 +35,8 @@ impl<'a> Tokenizer<'a> {
                     ))
                 },
                 _ => Ok(tkn)
-            }
+            },
+            lines: Vec::new(),
         }
     }
 
@@ -57,10 +59,12 @@ impl<'a> Tokenizer<'a> {
         self.current += increase
     }
     fn get_next_token(&mut self) -> Result<Token<'a>,Error> {
+        let cl = |func: Box<dyn FnOnce(LiteralValue, &'a str, u32, usize) -> Result<Token<'a>, Error>>, lit: LiteralValue, raw: &'a str| -> Result<Token<'a>, Error> {
+            func(lit, raw, self.line, self.current)
+        };
         let tkn = get_first_token(
             &self.text[self.current..],
-            self.line,
-            self.current
+            Box::new(cl)
         );
         match tkn.token_type {
             TokenType::Invalid => { Err(Error::new(
@@ -81,7 +85,16 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
-fn get_first_token(text: &str, line: u32, pos: usize) -> Token {
+fn get_first_token<'a>(
+    text: &'a str,
+    func: Box<dyn FnOnce(
+        Box<dyn FnOnce(
+            LiteralValue,
+            &'a str,
+            u32,
+            usize
+        ) -> Result<Token<'a>, Error>>, LiteralValue, &str
+    ) -> Result<Token<'a>,Error>>) -> Result<Token, Error> {
     //match regex
     let mut result = Token::invalid();
     if let Some(cap) = Regex::new(
@@ -91,12 +104,13 @@ fn get_first_token(text: &str, line: u32, pos: usize) -> Token {
     \**********************************************/
         r"^[iI]f"
     ).unwrap().find(text) {
-        result = Token::new_if(
-            LiteralValue::new_keyword(&text[..cap.len()]),
-            &text[cap.len()..],
-            line,
-            pos
-        ).unwrap();
+        result =
+            func(//TODO make Token::new that takes in a TokenType, raw, line, and position and then
+                //use that in the closure instead
+                Box::new(Token::new_if),
+                LiteralValue::new_keyword(&text[..cap.len()]),
+                &text[cap.len()..],
+            )?;
     } else if let Some(cap) = Regex::new(
         
     /**********************************************\
@@ -562,6 +576,19 @@ fn get_first_token(text: &str, line: u32, pos: usize) -> Token {
             line,
             pos
         ).unwrap();
+     } else if let Some(cap) = Regex::new(
+       
+    /**********************************************\
+    *                  new line                    * 
+    \**********************************************/
+        r"^\s*\n"
+    ).unwrap().find(text) {
+        result = Token::new_whitespace(
+            LiteralValue::none(),
+            &text[..cap.len()],
+            line,
+            pos
+        )
     } else if let Some(cap) = Regex::new(
        
     /**********************************************\

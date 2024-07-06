@@ -3,25 +3,7 @@ use super::{LiteralValue,Error,ErrorType};
 
 
 macro_rules! token_constructor {
-    ($type: tt, $lit_type: tt, $name: ident) => {
-        pub fn $name(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-            if let LiteralValue::$lit_type(_) = &val {
-                Ok(Token {
-                    token_type: TokenType::$type,
-                    val,
-                    raw,
-                    line,
-                    start
-                })
-            } else {
-                Err( Error::new( ErrorType::InvalidTokenValue, line, start ))
-            }
-        }
-    }
-}
-
-macro_rules! symbol_token_constructor {
-    ($type: tt, $sym: expr, $name: ident) => {
+    (Symbol, $type: tt, $sym: expr, $name: ident) => {
         pub fn $name(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
             if let LiteralValue::Symbol(sym) = &val {
                 if *sym != $sym {
@@ -43,14 +25,12 @@ macro_rules! symbol_token_constructor {
             }
         }
         
-    }
-}
+    };
 
-macro_rules! dbl_keyword_token_constructor {
-    ($type: tt, $sym1: expr, $sym2: expr, $name: ident) => {
+    (Keyword, $type: tt, $name: ident, $($lit: literal);+) => {
         pub fn $name(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
             if let LiteralValue::Keyword(key) = &val {
-                if *key != $sym1 || *key != $sym2 {
+                if $(*key != $lit)||+ {
                     return Err(Error::new(
                         ErrorType::InvalidTokenValue,
                         line,
@@ -68,20 +48,11 @@ macro_rules! dbl_keyword_token_constructor {
                 Err(Error::new(ErrorType::InvalidTokenValue, line, start))
             }
         }
-    }
-}
+    };
 
-macro_rules! sng_keyword_token_constructor {
-    ($type: tt, $sym: expr, $name: ident) => {
+    ($lit_type: tt, $type: tt, $name: ident) => {
         pub fn $name(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-            if let LiteralValue::Keyword(key) = &val {
-                if *key != $sym {
-                    return Err(Error::new(
-                        ErrorType::InvalidTokenValue,
-                        line,
-                        start
-                    ))
-                }
+            if let LiteralValue::$lit_type(_) = &val {
                 Ok(Token {
                     token_type: TokenType::$type,
                     val,
@@ -90,7 +61,7 @@ macro_rules! sng_keyword_token_constructor {
                     start
                 })
             } else {
-                Err(Error::new(ErrorType::InvalidTokenValue, line, start))
+                Err( Error::new( ErrorType::InvalidTokenValue, line, start ))
             }
         }
     }
@@ -124,7 +95,7 @@ pub enum TokenType {
     False, True, None, You,
     Assignment, Declaration, IdKeyword,
 
-    Whitespace, Eof, Invalid, Empty
+    Whitespace, Eof, Invalid, Empty, NewLine
 }
 
 impl fmt::Display for TokenType {
@@ -170,6 +141,7 @@ impl fmt::Display for TokenType {
             TokenType::Empty => "Empty".to_string(),
             TokenType::Whitespace => "Whitespace".to_string(),
             TokenType::Invalid => "Error".to_string(),
+            TokenType::NewLine => "New Line".to_string(),
         })
     }
 }
@@ -195,6 +167,8 @@ impl fmt::Display for Token<'_> {
         ", &self.token_type, &self.val, &self.raw, self.line, self.start)
     }
 }
+
+
 
 #[allow(dead_code)]
 impl<'a> Token<'a> {
@@ -248,108 +222,92 @@ impl<'a> Token<'a> {
             start: 0
         }
     }
-    
-    pub fn new_interrobang(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Symbol(sym) = &val {
-            if *sym != "‽" || *sym != "?!" || *sym != "!?" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Interrobang,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
+    pub fn from(ty: TokenType, lit: LiteralValue<'a>, line: u32, pos: usize) -> Result<Token<'a>,Error> {
+        match &ty {
+            NumericLiteral
+            StringLiteral
+            Identifier
+            Comma
+            Dot
+            Bang
+            Question
+            Interrobang
+            Semicolon
+            Colon
+            LeftParen
+            RightParen
+            Plus
+            Minus
+            Slash
+            Star
+            Mod
+            Ellipsis
+            If
+            Therefore 
+            EqTo
+            NeqTo
+            Or
+            Not
+            And
+            Less
+            Greater
+            LessEq
+            GreaterEq
+            False
+            True
+            None
+            You
+            Assignment
+            Declaration
+            IdKeyword
+            Whitespace
+            Eof
+            Invalid
+            Empty
+            NewLine        
         }
     }
+    //                 LiteralType     TokenType    Function Name 
+    token_constructor!(Identifier,     Identifier, new_identifier);
+    token_constructor!(    String,  StringLiteral,     new_string); 
+    token_constructor!(    Number, NumericLiteral,     new_number);
+ 
+    //              LiteralType TokenType  Char      Function Name
+    token_constructor!(Symbol,      Comma,  ",",       new_comma);
+    token_constructor!(Symbol,        Dot,  ".",         new_dot);
+    token_constructor!(Symbol,       Bang,  "!",        new_bang);
+    token_constructor!(Symbol,   Question,  "?",    new_question);
+    token_constructor!(Symbol,  Semicolon,  ";",   new_semicolon); 
+    token_constructor!(Symbol,      Colon,  ":",       new_colon); 
+    token_constructor!(Symbol,  LeftParen,  "(",  new_left_paren);
+    token_constructor!(Symbol, RightParen,  ")", new_right_paren); 
+    token_constructor!(Symbol,       Plus,  "+",        new_plus);
+    token_constructor!(Symbol,      Minus,  "-",       new_minus);
+    token_constructor!(Symbol,      Star,   "*",        new_star);
+    token_constructor!(Symbol,     Slash,   "/",       new_slash);
+    token_constructor!(Symbol,       Mod,   "%",         new_mod);
+    token_constructor!(Symbol,  Ellipsis, "...",    new_ellipsis);
 
-    pub fn new_assignment(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "it is" ||
-               *key != "he is" ||
-               *key != "she is" ||
-               *key != "they are" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Therefore,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-
-    pub fn new_id_keyword(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
-        if let LiteralValue::Keyword(key) = &val {
-            if *key != "called" ||
-               *key != "named" ||
-               *key != "labelled" {
-                return Err(Error::new(
-                    ErrorType::InvalidTokenValue,
-                    line,
-                    start
-                ))
-            }
-            Ok(Token {
-                token_type: TokenType::Therefore,
-                val,
-                raw,
-                line,
-                start
-            })
-        } else {
-            Err(Error::new(ErrorType::InvalidTokenValue, line, start))
-        }
-    }
-
-    token_constructor!(Identifier, Identifier, new_identifier);
-    token_constructor!(StringLiteral, String, new_string); 
-    token_constructor!(NumericLiteral, Number, new_number);
-    symbol_token_constructor!(Comma, ",", new_comma);
-    symbol_token_constructor!(Dot, ".", new_dot);
-    symbol_token_constructor!(Bang, "!", new_bang);
-    symbol_token_constructor!(Question, "?", new_question);
-    symbol_token_constructor!(Semicolon, ";", new_semicolon); 
-    symbol_token_constructor!(Colon, ":", new_colon); 
-    symbol_token_constructor!(LeftParen, "(",new_left_paren);
-    symbol_token_constructor!(RightParen, ")", new_right_paren); 
-    symbol_token_constructor!(Plus, "+", new_plus);
-    symbol_token_constructor!(Minus, "-", new_minus);
-    symbol_token_constructor!(Star,"*", new_star);
-    symbol_token_constructor!(Slash, "/", new_slash);
-    symbol_token_constructor!(Mod, "%", new_mod);
-    symbol_token_constructor!(Ellipsis, "...", new_ellipsis);
-    dbl_keyword_token_constructor!(If, "If", "if", new_if);
-    sng_keyword_token_constructor!(EqTo, "is equal to", new_eq_to); 
-    dbl_keyword_token_constructor!(NeqTo, "is not equal to", "isn't equal to", new_neq_to); 
-    sng_keyword_token_constructor!(Or, "or", new_or); 
-    dbl_keyword_token_constructor!(Not, "is not", "isn't", new_not); 
-    sng_keyword_token_constructor!(And, "and", new_and); 
-    sng_keyword_token_constructor!(LessEq, "is less than or equal to", new_less_eq); 
-    sng_keyword_token_constructor!(Less, "is less than", new_less);
-    sng_keyword_token_constructor!(GreaterEq, "is greater than or equal to", new_greater_eq);
-    sng_keyword_token_constructor!(Greater, "is greater than", new_greater);
-    dbl_keyword_token_constructor!(Therefore, "Therefore", "therefore", new_therefore);
-    sng_keyword_token_constructor!(False, "false", new_false);
-    sng_keyword_token_constructor!(True, "true", new_true);
-    sng_keyword_token_constructor!(None, "none", new_none);
-    sng_keyword_token_constructor!(You, "You", new_you); 
-    dbl_keyword_token_constructor!(Declaration, "; Therefore", "; therefore", new_declaration);
+    //                LiteralType  TokenType   Function Name   Match(es)
+    token_constructor!(Keyword,         And,         new_and, "and"); 
+    token_constructor!(Keyword,          Or,          new_or, "or"); 
+    token_constructor!(Keyword,        EqTo,       new_eq_to, "is equal to"); 
+    token_constructor!(Keyword,        Less,        new_less, "is less than");
+    token_constructor!(Keyword,      LessEq,     new_less_eq, "is less than or equal to"); 
+    token_constructor!(Keyword,     Greater,     new_greater, "is greater than");
+    token_constructor!(Keyword,   GreaterEq,  new_greater_eq, "is greater than or equal to");
+    token_constructor!(Keyword,        True,        new_true, "true");
+    token_constructor!(Keyword,       False,       new_false, "false");
+    token_constructor!(Keyword,        None,        new_none, "none");
+    token_constructor!(Keyword,         You,         new_you, "You"); 
+    token_constructor!(Keyword,         Not,         new_not, "is not";"isn't"); 
+    token_constructor!(Keyword,       NeqTo,      new_neq_to, "is not equal to" ; "isn't equal to"); 
+    token_constructor!(Keyword,          If,          new_if, "If" ; "if");
+    token_constructor!(Keyword,   Therefore,   new_therefore, "Therefore" ; "therefore");
+    token_constructor!(Keyword, Declaration, new_declaration, "; Therefore" ; "; therefore");
+    token_constructor!(Keyword,   IdKeyword,  new_id_keyword, "called";"named";"labelled");
+    token_constructor!(Keyword, Interrobang, new_interrobang, "!?";"?!";"‽");
+    token_constructor!(Keyword,  Assignment,  new_assignment, "it is";"he is";"she is";"they are");
 
 }
 

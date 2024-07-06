@@ -1,19 +1,16 @@
 use super::{error_handler::{Error, ErrorType}, tokenizer::{Token,TokenType}};
 use super::LiteralValue;
 
-macro_rules! unary_node_constructor {
-    ($type: tt, $name: ident) => {
+macro_rules! node_constructor {
+    (UNARY, $type: tt, $name: ident) => {
         pub fn $name(val: LiteralValue<'a>, token: Token<'a>) -> Self {
             TreeNode::$type {
                 val,
                 token
             }
         }
-    }
-}
-
-macro_rules! binary_node_constructor {
-    ($type: tt, $name: ident) => {
+    };
+    (BINARY, $type: tt, $name: ident) => {
         pub fn $name(left: Self, right: Self, token: Token<'a>) -> Self {
             TreeNode::$type {
                 left:Box::new(left),
@@ -229,27 +226,27 @@ impl<'a> TreeNode<'a> {
         }
     }
 
-    binary_node_constructor!(Addition, new_addition);
-    binary_node_constructor!(Subtraction, new_subtraction);
-    binary_node_constructor!(Multiplication, new_multiplication);
-    binary_node_constructor!(Division, new_division);
-    binary_node_constructor!(Modulo, new_modulus);
-    unary_node_constructor!(NumericLiteral, new_number);
-    unary_node_constructor!(StringLiteral, new_string);
-    unary_node_constructor!(Identifier, new_identifier);
-    unary_node_constructor!(Keyword, new_keyword);
-    unary_node_constructor!(Empty, new_empty);
-    unary_node_constructor!(Comma, new_comma);
-    unary_node_constructor!(Dot, new_dot);
-    unary_node_constructor!(Bang, new_bang);
-    unary_node_constructor!(Question, new_question); 
-    unary_node_constructor!(Interrobang, new_interrobang);
-    unary_node_constructor!(Semicolon, new_semicolon);
-    unary_node_constructor!(Colon, new_colon);
-    unary_node_constructor!(BooleanLiteral, new_bool);
-    unary_node_constructor!(None, new_none);
-    unary_node_constructor!(Eof, new_eof);
-    unary_node_constructor!(You, new_you);
+    node_constructor!(BINARY, Addition, new_addition);
+    node_constructor!(BINARY, Subtraction, new_subtraction);
+    node_constructor!(BINARY, Multiplication, new_multiplication);
+    node_constructor!(BINARY, Division, new_division);
+    node_constructor!(BINARY, Modulo, new_modulus);
+    node_constructor!(UNARY, NumericLiteral, new_number);
+    node_constructor!(UNARY, StringLiteral, new_string);
+    node_constructor!(UNARY, Identifier, new_identifier);
+    node_constructor!(UNARY, Keyword, new_keyword);
+    node_constructor!(UNARY, Empty, new_empty);
+    node_constructor!(UNARY, Comma, new_comma);
+    node_constructor!(UNARY, Dot, new_dot);
+    node_constructor!(UNARY, Bang, new_bang);
+    node_constructor!(UNARY, Question, new_question); 
+    node_constructor!(UNARY, Interrobang, new_interrobang);
+    node_constructor!(UNARY, Semicolon, new_semicolon);
+    node_constructor!(UNARY, Colon, new_colon);
+    node_constructor!(UNARY, BooleanLiteral, new_bool);
+    node_constructor!(UNARY, None, new_none);
+    node_constructor!(UNARY, Eof, new_eof);
+    node_constructor!(UNARY, You, new_you);
 
     pub fn get_type(&self) -> String {
         match &self {
