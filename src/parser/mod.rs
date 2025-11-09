@@ -1,8 +1,8 @@
 mod tokenizer;
-use tokenizer::{LiteralValue, Token, TokenType, Tokenizer};
+pub use tokenizer::{LiteralValue, Token, TokenType, Tokenizer};
 
 mod error_handler;
-use error_handler::{Error, ErrorType, ErrorHandler};
+use error_handler::{NvlError, ErrorType, ErrorHandler};
 
 mod tree_node;
 use tree_node::TreeNode;
@@ -36,7 +36,7 @@ impl<'a> Parser<'a> {
 */
     fn parse_f(&mut self) -> TreeNode<'a> {
         let node = match &self.tokenizer.peek() {
-            Ok(_) => {
+            Some(_) => {
                 let tkn = &self.tokenizer.scan().unwrap().clone();
             
                 match tkn.token_type {
@@ -111,21 +111,23 @@ impl<'a> Parser<'a> {
                     },
                     _ => {
                         let _ = &self.error_handler.report(
-                            Error::new(
+                            NvlError::new(
                                 ErrorType::UnexpectedToken,
                                 tkn.line(),
-                                tkn.start()
+                                tkn.start(),
+                                "Error".to_string()
                             ));
                         TreeNode::new_empty(tkn.val, *tkn)
                     }
                 }
             },
-            Err(e) => {
+            None => {
                 let _ = &self.error_handler.report(
-                    Error::new(
-                        ErrorType::UnexpectedToken,
-                        e.line,
-                        e.position
+                    NvlError::new(
+                        ErrorType::UnexpectedEof,
+                        &0,
+                        &0,
+                        "Error".to_string()
                     )
                 );
                 TreeNode::new_empty(
@@ -189,11 +191,12 @@ impl<'a> Parser<'a> {
                     }
                 },
                 Err(e) => {
-                    let _ = &self.error_handler.report(Error {
-                        error_type: e.error_type,
-                        line: e.line,
-                        position: e.position
-                    });
+                    let _ = &self.error_handler.report(NvlError::new(
+                        e.error_type,
+                        &e.line,
+                        &e.position,
+                        "Error".to_string()
+                    ));
                     TreeNode::new_none(LiteralValue::none(), Token::invalid())
                 }
             }
@@ -204,11 +207,12 @@ impl<'a> Parser<'a> {
             match &self.tokenizer.peek() {
                 Ok(tkn) => !matches!(tkn.token_type, TokenType::Eof),
                 Err(e) => {
-                    let _ = &self.error_handler.report(Error {
-                        error_type: e.error_type,
-                        line: e.line,
-                        position: e.position 
-                    });
+                    let _ = &self.error_handler.report(Error::new(
+                        e.error_type,
+                        &e.line,
+                        &e.position ,
+                        "Error".to_string()
+                ));
                     false
                 }
             }

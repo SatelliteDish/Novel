@@ -1,67 +1,96 @@
 use core::fmt;
-use super::{LiteralValue,Error,ErrorType};
+use super::{LiteralValue,NvlError,ErrorType};
+use std::error;
 
 
 macro_rules! token_constructor {
     (Symbol, $type: tt, $sym: expr, $name: ident) => {
-        pub fn $name(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
+        pub fn $name(val: LiteralValue<'a>, line: u32, start: usize, length: usize) -> Result<Token<'a>,Box<dyn error::Error>> {
             if let LiteralValue::Symbol(sym) = &val {
                 if *sym != $sym {
-                    return Err(Error::new(
-                        ErrorType::InvalidTokenValue,
-                        line,
-                        start
+                    return Err(Box::new(
+                        NvlError::new(
+                            ErrorType::InvalidTokenValue,
+                            &line,
+                            &start,
+                            "Error".to_string()
+                        )
                     ))
                 }
                 Ok(Token {
                     token_type: TokenType::$type,
                     val,
-                    raw,
                     line,
-                    start
+                    start,
+                    length
                 })
             } else {
-                Err(Error::new(ErrorType::InvalidTokenValue, line, start))
+                Err(
+                    Box::new(
+                        NvlError::new(
+                            ErrorType::InvalidTokenValue,
+                            &line,
+                            &start,
+                            "Error".to_string()
+                        )
+                    )
+                )
             }
         }
-        
     };
 
     (Keyword, $type: tt, $name: ident, $($lit: literal);+) => {
-        pub fn $name(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
+        pub fn $name(val: LiteralValue<'a>, line: u32, start: usize, length: usize) -> Result<Token<'a>,Box<dyn error::Error>> {
             if let LiteralValue::Keyword(key) = &val {
                 if $(*key != $lit)||+ {
-                    return Err(Error::new(
-                        ErrorType::InvalidTokenValue,
-                        line,
-                        start
+                    return Err(Box::new(
+                            NvlError::new(
+                                ErrorType::InvalidTokenValue,
+                                &line,
+                                &start,
+                                "Error".to_string()
+                            )
                     ))
                 }
                 Ok(Token {
                     token_type: TokenType::$type,
                     val,
-                    raw,
                     line,
-                    start
+                    start,
+                    length
                 })
             } else {
-                Err(Error::new(ErrorType::InvalidTokenValue, line, start))
+                Err(Box::new(
+                    NvlError::new(
+                        ErrorType::InvalidTokenValue,
+                        &line,
+                        &start,
+                        "Error".to_string()
+                    )
+                ))
             }
         }
     };
 
     ($lit_type: tt, $type: tt, $name: ident) => {
-        pub fn $name(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
+        pub fn $name(val: LiteralValue<'a>, line: u32, start: usize, length: usize) -> Result<Token<'a>,Box<dyn error::Error>> {
             if let LiteralValue::$lit_type(_) = &val {
                 Ok(Token {
                     token_type: TokenType::$type,
                     val,
-                    raw,
                     line,
-                    start
+                    start,
+                    length
                 })
             } else {
-                Err( Error::new( ErrorType::InvalidTokenValue, line, start ))
+                Err(Box::new(
+                    NvlError::new(
+                        ErrorType::InvalidTokenValue,
+                        &line,
+                        &start,
+                        "Error".to_string()
+                    )  
+                ))
             }
         }
     }
@@ -146,13 +175,74 @@ impl fmt::Display for TokenType {
     }
 }
 
+pub struct TokenBuilder<'a> {
+    token_type: Option<TokenType>,
+    val: Option<LiteralValue<'a>>,
+    line: Option<u32>,
+    start: Option<usize>,
+    length: Option<usize>,
+}
+
+impl<'a> TokenBuilder<'a> {
+    pub fn new() -> Self {
+        TokenBuilder {
+            token_type: None,
+            val: None,
+            line: None,
+            start: None,
+            length: None,
+        }
+    }
+
+    pub fn with_token_type(mut self, token_type: TokenType) -> Self {
+        self.token_type = Some(token_type);
+        self
+    }
+
+    pub fn with_value(mut self, value: LiteralValue<'a> ) -> Self {
+        self.val = Some(value);
+        self
+    }
+
+    pub fn with_line(mut self, line: u32 ) -> Self {
+        self.line = Some(line);
+        self
+    }
+
+    pub fn with_start(mut self, start: usize ) -> Self {
+        self.start = Some(start);
+        self
+    }
+
+    pub fn with_length(mut self, length: usize ) -> Self {
+        self.length = Some(length);
+        self
+    }
+
+    pub fn build(self) -> Result<Token<'a>, Box::<dyn error::Error>> {
+        let token_type = self.token_type.ok_or("Tried to build token with unset type!")?;
+        let val = self.val.ok_or("Tried to build token with unset value!")?;
+        let line = self.line.ok_or("Tried to build token with unset line!")?;
+        let start = self.start.ok_or("Tried to build token with unset start position!")?;
+        let length = self.length.ok_or("Tried to build token with unset length!")?;
+        
+        Ok( Token {
+            token_type,
+            val,
+            line,
+            start,
+            length,
+        } )
+    }
+}
+
 #[derive(PartialEq,Clone,Copy)]
 pub struct Token<'a> {
     pub token_type: TokenType,
     pub val: LiteralValue<'a>,
-    raw: &'a str,
     line: u32,
-    start: usize
+    start: usize,
+    length: usize,
 }
 
 impl fmt::Display for Token<'_> {
@@ -160,117 +250,74 @@ impl fmt::Display for Token<'_> {
         write!(f,"
             \"{}\": {{
                 \"val\": {},
-                \"raw\": {},
+                \"start\": {},
                 \"line\": {},
-                \"start\": {}
+                \"len\": {}
             }}
-        ", &self.token_type, &self.val, &self.raw, self.line, self.start)
+        ", &self.token_type, &self.val, &self.start, &self.line, &self.len())
     }
 }
 
-
-
 #[allow(dead_code)]
 impl<'a> Token<'a> {
+    
+    pub fn begin() -> TokenBuilder<'a> {
+        TokenBuilder::new()
+    }
 
-    pub fn len(&self) -> usize {
-        self.raw.len()
+    pub fn len(&self) -> &usize {
+        &self.length
+    }
+    
+    pub fn line(&self) -> &u32 {
+        &self.line
     }
 
     pub fn end(&self) -> usize {
-        self.start + self.len()
+        self.start + self.length
     }
 
-    pub fn line(&self) -> u32 {
-        self.line
+    pub fn start(&self) -> &usize {
+        &self.start
     }
 
-    pub fn start(&self) -> usize {
-        self.start
-    }
-
-    pub fn new_whitespace(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Token<'a> {
-        Token {
-            token_type: TokenType::Whitespace,
-            val,
-            raw,
-            line,
-            start
-        }
-    }
-
-    pub fn new_eof(val: LiteralValue<'a>, raw: &'a str, line: u32, start: usize) -> Result<Token<'a>,Error> {
+    pub fn new_eof(val: LiteralValue<'a>, line: u32, start: usize, length: usize) -> Result<Token<'a>,Box<dyn error::Error>> {
         if let LiteralValue::Eof = &val {
-            Ok(Token {
+            Ok( Token{
                 token_type: TokenType::Eof,
                 val,
-                raw,
                 line,
-                start
+                start,
+                length
             })
         } else {
-            Err( Error::new( ErrorType::InvalidTokenValue, line, start ))
+            Err( Box::new(
+                NvlError::new(
+                    ErrorType::InvalidTokenValue,
+                    &line,
+                    &start,
+                    "Error".to_string()
+                ))
+            )
         }
     }
-    
+
     pub fn invalid() -> Self {
         Token {
             token_type: TokenType::Invalid,
             val: LiteralValue::none(),
-            raw: "\0",
             line: 0,
-            start: 0
+            start: 0,
+            length: 0
         }
     }
-    pub fn from(ty: TokenType, lit: LiteralValue<'a>, line: u32, pos: usize) -> Result<Token<'a>,Error> {
-        match &ty {
-            NumericLiteral
-            StringLiteral
-            Identifier
-            Comma
-            Dot
-            Bang
-            Question
-            Interrobang
-            Semicolon
-            Colon
-            LeftParen
-            RightParen
-            Plus
-            Minus
-            Slash
-            Star
-            Mod
-            Ellipsis
-            If
-            Therefore 
-            EqTo
-            NeqTo
-            Or
-            Not
-            And
-            Less
-            Greater
-            LessEq
-            GreaterEq
-            False
-            True
-            None
-            You
-            Assignment
-            Declaration
-            IdKeyword
-            Whitespace
-            Eof
-            Invalid
-            Empty
-            NewLine        
-        }
-    }
-    //                 LiteralType     TokenType    Function Name 
+
+
     token_constructor!(Identifier,     Identifier, new_identifier);
+    //                 LiteralType     TokenType    Function Name 
     token_constructor!(    String,  StringLiteral,     new_string); 
     token_constructor!(    Number, NumericLiteral,     new_number);
+    token_constructor!(   NewLine,        NewLine,       new_line);
  
     //              LiteralType TokenType  Char      Function Name
     token_constructor!(Symbol,      Comma,  ",",       new_comma);
@@ -316,13 +363,12 @@ impl std::fmt::Debug for Token<'_> {
         write!(f,"
         \"{}\": {{
             \"val\": {},
-            \"raw\": {},
             \"line\": {},
             \"start\": {},
             \"len\": {},
             \"end\": {}
         }}
-    ",&self.token_type,&self.val,&self.raw,&self.line,&self.start,&self.len(),&self.end())
+    ",&self.token_type,&self.val,&self.line,&self.start,&self.len(),&self.end())
     }
 }
 #[cfg(test)]

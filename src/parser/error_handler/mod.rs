@@ -1,5 +1,5 @@
 pub struct ErrorHandler {
-    errors: Vec<Error>
+    errors: Vec<NvlError>
 }
 
 impl ErrorHandler {
@@ -9,7 +9,7 @@ impl ErrorHandler {
         }
     }
 
-    pub fn report(&mut self,error: Error) {
+    pub fn report(&mut self,error: NvlError) {
         self.errors.push(error)
     }
     
@@ -26,37 +26,44 @@ impl ErrorHandler {
 }
 
 
-#[derive(PartialEq,Clone,Copy)]
-pub struct Error {
+#[derive(PartialEq, Clone)]
+pub struct NvlError {
     pub error_type: ErrorType,
     pub line: u32,
-    pub position: usize
+    pub position: usize,
+    pub message: Box<String>,
 }
 
-impl Error {
-
-    pub fn new(error_type: ErrorType,line: u32, position: usize) -> Self {
-        Error {
+impl NvlError {
+    pub fn new(error_type: ErrorType,line: &u32, position: &usize, message: String) -> Self {
+        NvlError {
             error_type,
-            line,
-            position
+            line: *line,
+            position: *position,
+            message: Box::new(message)
         }
     }
 }
 
-impl std::fmt::Display for Error {
+impl std::fmt::Display for NvlError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f,"{}[{}:{}]",self.error_type
-        .get_type(),self.line,self.position)
+        write!(f,"{}[{}:{}] {}",
+            &self.error_type.get_type(),
+            &self.line,
+            &self.position,
+            &self.message
+        )
     }
 
 }
 
-impl std::fmt::Debug for Error {
+impl std::fmt::Debug for NvlError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,"{}",&self.to_string())
     }
 }
+
+impl std::error::Error for NvlError {}
 
     #[allow(dead_code)]
 #[derive(Clone,Copy,PartialEq)]
@@ -67,7 +74,9 @@ pub enum ErrorType {
     UnknownToken,
     MissingToken,
     InvalidTokenValue,
+    InvalidTokenLength,
     UnexpectedToken,
+    UnexpectedEof,
 }
 
 impl std::fmt::Display for ErrorType {
@@ -92,6 +101,8 @@ impl ErrorType {
             Self::MissingToken => "Missing Token".to_string(),
             Self::InvalidTokenValue => "Invalid Token Value".to_string(),
             Self::UnexpectedToken => "Unexpected Token".to_string(),
+            Self::InvalidTokenLength => "Invalid Token Length".to_string(),
+            Self::UnexpectedEof => "Unexpected End Of File".to_string(),
         }
     }
 }

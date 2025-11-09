@@ -1,4 +1,4 @@
-use super::{error_handler::{Error, ErrorType}, tokenizer::{Token,TokenType}};
+use super::{error_handler::{NvlError, ErrorType}, tokenizer::{Token,TokenType}};
 use super::LiteralValue;
 
 macro_rules! node_constructor {
@@ -297,10 +297,10 @@ impl<'a> TreeNode<'a> {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
                         Ok(LiteralValue::new_number(left_num + right_num))
                     } else {
-                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
+                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start(), "Error".to_string() ))
                     }
                 } else {
-                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
+                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start(), "Error".to_string()))
                 }
             }
             TreeNode::Subtraction{left,right,token} => {
@@ -308,10 +308,10 @@ impl<'a> TreeNode<'a> {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
                         Ok(LiteralValue::new_number(left_num - right_num))
                     } else {
-                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
+                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start(), "Error".to_string()))
                     }
                 } else {
-                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
+                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start(), "Error".to_string()))
                 }
             }
             TreeNode::Multiplication{left,right,token} => {
@@ -319,36 +319,36 @@ impl<'a> TreeNode<'a> {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
                         Ok(LiteralValue::new_number(left_num * right_num))
                     } else {
-                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
+                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start(), "Error".to_string()))
                     }
                 } else {
-                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
+                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start(), "Error".to_string()))
                 }
             }
             TreeNode::Division {left, right,token} => {
                 if let (Ok(left_val),Ok(right_val)) = (&left.eval(),&right.eval()) {
                     if let (LiteralValue::Number(left_num),LiteralValue::Number(right_num)) = (left_val,right_val) {
-                        if *right_num == 0.0 { return Err(Error::new(ErrorType::DivideByZero,token.line(), token.start())) }
+                        if *right_num == 0.0 { return Err(Error::new(ErrorType::DivideByZero,token.line(), token.start(), "Error".to_string())) }
                         Ok(LiteralValue::new_number(left_num / right_num))
                     } else {
-                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
+                        Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start(), "Error".to_string()))
                     }
                 } else {
-                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start()))
+                    Err(Error::new(ErrorType::InvalidOperands, token.line(), token.start(), "Error".to_string()))
                 }
             },
             TreeNode::NumericLiteral{val,..} => Ok(*val),
             TreeNode::Empty{..} => Ok(LiteralValue::none()),
-            _ => Err(Error::new(ErrorType::NotImplemented, 0, 0))
+            _ => Err(Error::new(ErrorType::NotImplemented, &0, &0, "Error".to_string()))
 
         }
     }
 
 }
 
+#[cfg(test)]
 mod tests {
-    use super::{TreeNode,LiteralValue,Token};
-
+    use super::*;
     #[allow(dead_code)]
     fn get_test_number(num: f64) -> TreeNode<'static> {
         TreeNode::new_number(LiteralValue::new_number(num),Token::invalid())
